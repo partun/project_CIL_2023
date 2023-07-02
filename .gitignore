@@ -1,3 +1,6 @@
 .idea
+.mypy_cache
+.vscode
 twitter-datasets/*.txt
 twitter-datasets/*.csv
+twitter-datasets/*.pkl

@@ -5,13 +5,13 @@ import pickle
 
 
 def main():
-    with open('vocab.pkl', 'rb') as f:
+    with open('twitter-datasets/vocab.pkl', 'rb') as f:
         vocab = pickle.load(f)
     vocab_size = len(vocab)
 
     data, row, col = [], [], []
     counter = 1
-    for fn in ['train_pos.txt', 'train_neg.txt']:
+    for fn in ['twitter-datasets/train_pos.txt', 'twitter-datasets/train_neg.txt']:
         with open(fn) as f:
             for line in f:
                 tokens = [vocab.get(t, -1) for t in line.strip().split()]
