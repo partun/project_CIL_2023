@@ -27,8 +27,8 @@ def preprocess():
     tweets = []
     labels = []
 
-    load_tweets("../twitter-datasets/train_pos.txt", 1, tweets, labels)
-    load_tweets("../twitter-datasets/train_neg.txt", 0, tweets, labels)
+    load_tweets("../twitter-datasets/train_pos_full.txt", 1, tweets, labels)
+    load_tweets("../twitter-datasets/train_neg_full.txt", 0, tweets, labels)
 
     tweets = np.array(tweets)
     labels = np.array(labels)
@@ -50,7 +50,7 @@ def preprocess():
     Y_val = labels[val_indices]
 
     # code
-    max_features = 2000
+    max_features = 20000
     nb_classes = 2
     batch_size = 16
     maxlen = 140
@@ -72,8 +72,8 @@ def preprocess():
 
     print('Build model...')
     model = Sequential()
-    model.add(Embedding(max_features, 64))
-    model.add(LSTM(64)) 
+    model.add(Embedding(max_features, 128))
+    model.add(LSTM(128)) 
     model.add(Dense(nb_classes))
     model.add(Activation('softmax'))
 
@@ -82,7 +82,7 @@ def preprocess():
                 metrics=['accuracy'])
 
     print('Train...')
-    model.fit(X_train, Y_train, batch_size=batch_size, epochs=1,
+    model.fit(X_train, Y_train, batch_size=batch_size, epochs=2,
             validation_data=(X_val, Y_val))
     score, acc = model.evaluate(X_val, Y_val,
                                 batch_size=batch_size)

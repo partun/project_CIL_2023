@@ -4,3 +4,4 @@
 twitter-datasets/*.txt
 twitter-datasets/*.csv
 twitter-datasets/*.pkl
+.DS_Store
