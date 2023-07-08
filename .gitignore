@@ -1,6 +1,15 @@
 .idea
 .mypy_cache
 .vscode
+.DS_Store
 twitter-datasets/*.txt
 twitter-datasets/*.csv
 twitter-datasets/*.pkl
+
+
+*.pkl
+
+bert/dataset_full_cache
+bert/dataset_chache
+
+__pycache__
