@@ -127,7 +127,7 @@ def get_preprocess(tokenizer):
     return preprocess
 
 
-def tokenize_dataset(dataset, tokenizer_model, device):
+def tokenize_dataset(dataset, tokenizer_model):
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_model)
 
     encoded_dataset = dataset.map(get_preprocess(tokenizer), batched=True)
@@ -138,7 +138,7 @@ def tokenize_dataset(dataset, tokenizer_model, device):
 
 
 def load_and_tokenize_dataset(
-    tokenizer_model, device, frac=1, train_size=0.8, use_full_dataset=True
+    model_config, frac=1, train_size=0.8, use_full_dataset=True
 ):
     if use_full_dataset:
         cache_path = "dataset_full_cache"
@@ -151,7 +151,7 @@ def load_and_tokenize_dataset(
         return dataset
 
     dataset = load_dataset(frac, train_size, use_full_dataset)
-    dataset = tokenize_dataset(dataset, tokenizer_model, "cpu")
+    dataset = tokenize_dataset(dataset, model_config.tokenizer_model)
 
     dataset.save_to_disk(cache_path)
     return dataset

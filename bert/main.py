@@ -1,22 +1,26 @@
 from dataset import load_dataset, tokenize_dataset, load_and_tokenize_dataset
 import transformers
 import torch
+from typing import NamedTuple
 from tqdm import tqdm
 import numpy as np
 from torch.utils.data import DataLoader
-from sklearn import metrics
 import copy
 from torch import cuda
 import pickle
+from pprint import pprint
 
 np.random.seed(1)
-tokenizer_model = "distilbert-base-uncased"
-nn_model = "prajjwal1/bert-mini"
-device = "cuda" if cuda.is_available() else "cpu"
-TRAIN_BATCH_SIZE = 16
-VALID_BATCH_SIZE = 16
-EPOCHS = 1
-LEARNING_RATE = 1e-05
+
+
+class ModelConfig(NamedTuple):
+    tokenizer_model: str
+    nn_model: str
+    device: str
+    train_batch_size: int
+    valid_batch_size: int
+    epochs: int
+    learning_rate: float
 
 
 class BERTClass(torch.nn.Module):
@@ -37,15 +41,16 @@ class BERTClass(torch.nn.Module):
         return output
 
 
-def train_model(model, train_data, val_data):
+def train_model(model, model_config: ModelConfig, train_data, val_data):
     loss_fn = torch.nn.BCELoss()  # binary cross entropy
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = torch.optim.Adam(model.parameters(), lr=model_config.learning_rate)
+    device = model_config.device
 
     # Hold the best model
     best_acc = -np.inf  # init to negative infinity
     best_weights = None
 
-    for epoch in range(EPOCHS):
+    for epoch in range(model_config.epochs):
         model.train()
         with tqdm(
             train_data,
@@ -105,8 +110,9 @@ def train_model(model, train_data, val_data):
     return best_acc
 
 
-def eval_model(model, train_data, val_data):
+def eval_model(model, model_config: ModelConfig, train_data, val_data):
     # evaluate accuracy at end of each epoch
+    device = model_config.device
     model.eval()
     with torch.no_grad():
         correct_cnt = 0
@@ -140,9 +146,10 @@ def eval_model(model, train_data, val_data):
         print(f"training accuracy: {acc:.3f}")
 
 
-def generate_predictions(model, test_data, output_file):
+def generate_predictions(model, model_config: ModelConfig, test_data, output_file):
     # evaluate accuracy at end of each epoch
     model.eval()
+    device = model_config.device
     with torch.no_grad():
         ids = test_data["id"].to(device, dtype=torch.float32).reshape(-1, 1)
         y_pred = model(
@@ -164,33 +171,43 @@ def load_model(model, path):
 
 
 def main():
-    print(f"running bert model using {device}")
+    model_config = ModelConfig(
+        tokenizer_model="distilbert-base-uncased",
+        nn_model="prajjwal1/bert-mini",
+        device="cuda" if cuda.is_available() else "cpu",
+        train_batch_size=16,
+        valid_batch_size=16,
+        epochs=1,
+        learning_rate=1e-05,
+    )
+
+    pprint(model_config)
 
     model = BERTClass()
-    model.to(device)
+    model.to(model_config.device)
 
     dataset = load_and_tokenize_dataset(
-        tokenizer_model, device, frac=1, use_full_dataset=True, train_size=0.8
+        model_config, frac=1, use_full_dataset=True, train_size=0.8
     )
 
     training_loader = DataLoader(
         dataset["train"],
-        batch_size=TRAIN_BATCH_SIZE,
+        batch_size=model_config.train_batch_size,
         shuffle=True,
         num_workers=0,
     )
     validation_loader = DataLoader(
         dataset["validation"],
-        batch_size=VALID_BATCH_SIZE,
+        batch_size=model_config.valid_batch_size,
         shuffle=False,
         num_workers=0,
     )
 
     load_model(model, "bert_mini_2_epoch_full.pkl")
-    train_model(model, training_loader, validation_loader)
+    train_model(model, model_config, training_loader, validation_loader)
     save_model(model, "bert_mini_3_epoch_full.pkl")
 
-    eval_model(model, training_loader, validation_loader)
+    eval_model(model, model_config, training_loader, validation_loader)
 
 
 if __name__ == "__main__":
