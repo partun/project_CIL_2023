@@ -22,6 +22,12 @@ class ModelConfig(NamedTuple):
     epochs: int
     learning_rate: float
 
+    def __repr__(self) -> str:
+        out = "Best Transformer Config:\n"
+        for k, v in zip(self._fields, self):
+            out += f"- {k:<16} = {v}\n"
+        return out
+
 
 class BERTClass(torch.nn.Module):
     def __init__(self):
@@ -181,7 +187,7 @@ def main():
         learning_rate=1e-05,
     )
 
-    pprint(model_config)
+    print(model_config)
 
     model = BERTClass()
     model.to(model_config.device)
