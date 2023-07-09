@@ -4,3 +4,8 @@ matplotlib
 torch
 tqdm
 scikit-learn
+jupyter
+simpletransformers
+wandb
+chardet
+datasets
