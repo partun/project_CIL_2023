@@ -11,7 +11,7 @@ glove.6B.50d.txt
 *.pkl
 
 bert/dataset_full_cache
-bert/dataset_chache
+bert/dataset_cache
 
 __pycache__
 .DS_Store

@@ -9,6 +9,7 @@ import copy
 from torch import cuda
 import pickle
 from pprint import pprint
+import pandas as pd
 
 np.random.seed(1)
 
@@ -21,6 +22,7 @@ class ModelConfig(NamedTuple):
     valid_batch_size: int
     epochs: int
     learning_rate: float
+    force_reload_dataset: bool
 
     def __repr__(self) -> str:
         out = "Best Transformer Config:\n"
@@ -48,6 +50,10 @@ class BERTClass(torch.nn.Module):
 
 
 def train_model(model, model_config: ModelConfig, train_data, val_data):
+    """
+    Train the model
+    """
+
     loss_fn = torch.nn.BCELoss()  # binary cross entropy
     optimizer = torch.optim.Adam(model.parameters(), lr=model_config.learning_rate)
     device = model_config.device
@@ -117,7 +123,10 @@ def train_model(model, model_config: ModelConfig, train_data, val_data):
 
 
 def eval_model(model, model_config: ModelConfig, train_data, val_data):
-    # evaluate accuracy at end of each epoch
+    """
+    Evaluate model on train and validation data
+    """
+
     device = model_config.device
     model.eval()
     with torch.no_grad():
@@ -153,26 +162,41 @@ def eval_model(model, model_config: ModelConfig, train_data, val_data):
 
 
 def generate_predictions(model, model_config: ModelConfig, test_data, output_file):
-    # evaluate accuracy at end of each epoch
+    """
+    Generate predictions for test data that can be submitted to Kaggle
+    """
     model.eval()
     device = model_config.device
     with torch.no_grad():
-        ids = test_data["id"].to(device, dtype=torch.float32).reshape(-1, 1)
+        ids = test_data["id"].reshape(-1, 1)
         y_pred = model(
             test_data["input_ids"].to(device, dtype=torch.long),
             test_data["attention_mask"].to(device, dtype=torch.long),
             test_data["token_type_ids"].to(device, dtype=torch.long),
-        )
+        ).round()
 
-        print(y_pred.head())
-        print(ids.head())
+        # move tensors to cpu
+        ids = ids.cpu()
+        y_pred = y_pred.cpu()
+
+        df = pd.DataFrame({"Id": ids.squeeze(), "Prediction": y_pred.squeeze()})
+        df["Prediction"] = df["Prediction"].apply(lambda x: 1 if x == 1 else -1)
+        df.to_csv(output_file, index=False, sep=",", header=True)
+
+        print(f"generated predictions ({output_file=})")
 
 
 def save_model(model, path):
+    """
+    Save the model to the given path
+    """
     torch.save(model.state_dict(), path)
 
 
 def load_model(model, path):
+    """
+    Load the model from the given path
+    """
     model.load_state_dict(torch.load(path))
 
 
@@ -185,6 +209,7 @@ def main():
         valid_batch_size=16,
         epochs=1,
         learning_rate=1e-05,
+        force_reload_dataset=False,
     )
 
     print(model_config)
@@ -193,7 +218,11 @@ def main():
     model.to(model_config.device)
 
     dataset = load_and_tokenize_dataset(
-        model_config, frac=1, use_full_dataset=True, train_size=0.8
+        model_config,
+        frac=1,
+        use_full_dataset=True,
+        train_size=0.8,
+        force_reload=model_config.force_reload_dataset,
     )
 
     training_loader = DataLoader(
@@ -209,11 +238,15 @@ def main():
         num_workers=0,
     )
 
-    load_model(model, "bert_mini_2_epoch_full.pkl")
+    # load_model(model, "bert_mini_3_epoch_full.pkl")
     train_model(model, model_config, training_loader, validation_loader)
-    save_model(model, "bert_mini_3_epoch_full.pkl")
+    # save_model(model, "bert_mini_3_epoch_full.pkl")
 
     eval_model(model, model_config, training_loader, validation_loader)
+
+    generate_predictions(
+        model, model_config, dataset["test"], "bert_mini_3_epoch_full_results.csv"
+    )
 
 
 if __name__ == "__main__":

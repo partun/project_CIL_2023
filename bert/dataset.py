@@ -7,26 +7,28 @@ import os
 
 def load_dataset(frac=1, train_size=0.8, use_full_dataset=True):
     if use_full_dataset:
-        neg_path = "../twitter-datasets/train_neg_full.txt"
-        pos_path = "../twitter-datasets/train_pos_full.txt"
+        neg_path = "../twitter-datasets/train_neg_full_notabs.csv"
+        pos_path = "../twitter-datasets/train_pos_full_notabs.csv"
     else:
-        neg_path = "../twitter-datasets/train_neg.txt"
-        pos_path = "../twitter-datasets/train_pos.txt"
+        neg_path = "../twitter-datasets/train_neg_notabs.csv"
+        pos_path = "../twitter-datasets/train_pos_notabs.csv"
 
     tweets_neg = pd.read_csv(
         neg_path,
-        sep="\t\t",
+        sep="\t",
         lineterminator="\n",
         encoding="utf8",
         names=["tweet"],
+        quoting=3,
     )
 
     tweets_pos = pd.read_csv(
         pos_path,
-        sep="\t\t",
+        sep="\t",
         lineterminator="\n",
         encoding="utf8",
         names=["tweet"],
+        quoting=3,
     )
 
     tweets_neg["label"] = 0
@@ -47,58 +49,33 @@ def load_dataset(frac=1, train_size=0.8, use_full_dataset=True):
             "train": Dataset.from_pandas(
                 train_dataset,
                 features=Features(
-                    {
-                        "tweet": Value("string"),
-                        "label": Value("float32")
-                        # "label": ClassLabel(
-                        #     names=["negative", "positive"],
-                        #     names_file=None,
-                        #     id=None,
-                        # ),
-                    }
+                    {"tweet": Value("string"), "label": Value("float32")}
                 ),
             ),
             "validation": Dataset.from_pandas(
                 val_dataset,
                 features=Features(
-                    {
-                        "tweet": Value("string"),
-                        "label": Value("float32")
-                        # "label": ClassLabel(
-                        #     names=["negative", "positive"],
-                        #     names_file=None,
-                        #     id=None,
-                        # ),
-                    }
+                    {"tweet": Value("string"), "label": Value("float32")}
                 ),
             ),
         }
     )
 
-    # if use_full_dataset:
-    #     test_dataset = pd.read_csv(
-    #         "../twitter-datasets/test_data.txt",
-    #         sep=",",
-    #         lineterminator="\n",
-    #         encoding="utf8",
-    #         names=["id", "tweet"],
-    #     )
-    #     dataset["test"] = (
-    #         Dataset.from_pandas(
-    #             test_dataset,
-    #             features=Features(
-    #                 {
-    #                     "tweet": Value("string"),
-    #                     "label": Value("float32")
-    #                     # "label": ClassLabel(
-    #                     #     names=["negative", "positive"],
-    #                     #     names_file=None,
-    #                     #     id=None,
-    #                     # ),
-    #                 }
-    #             ),
-    #         ),
-    #     )
+    if use_full_dataset:
+        test_dataset = pd.read_csv(
+            "../twitter-datasets/test_data_notabs.csv",
+            sep="\t",
+            lineterminator="\n",
+            encoding="utf8",
+            names=["id", "tweet"],
+            header=None,
+            quoting=3,
+        )
+        print(len(test_dataset))
+        dataset["test"] = Dataset.from_pandas(
+            test_dataset,
+            features=Features({"tweet": Value("string"), "id": Value("int64")}),
+        )
 
     dataset = dataset.with_format("torch")
     print("loaded dataset successfully!")
@@ -117,12 +94,24 @@ def get_preprocess(tokenizer):
             return_token_type_ids=True,
         )
 
-        return {
-            "input_ids": torch.tensor(input["input_ids"], dtype=torch.long),
-            "attention_mask": torch.tensor(input["attention_mask"], dtype=torch.long),
-            "token_type_ids": torch.tensor(input["token_type_ids"], dtype=torch.long),
-            "label": examples["label"],
-        }
+        input_ids = torch.tensor(input["input_ids"], dtype=torch.long)
+        attention_mask = torch.tensor(input["attention_mask"], dtype=torch.long)
+        token_type_ids = torch.tensor(input["token_type_ids"], dtype=torch.long)
+
+        if "label" in examples:
+            return {
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "token_type_ids": token_type_ids,
+                "label": examples["label"],
+            }
+        else:
+            return {
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "token_type_ids": token_type_ids,
+                "id": examples["id"],
+            }
 
     return preprocess
 
@@ -138,16 +127,17 @@ def tokenize_dataset(dataset, tokenizer_model):
 
 
 def load_and_tokenize_dataset(
-    model_config, frac=1, train_size=0.8, use_full_dataset=True
+    model_config, frac=1, train_size=0.8, use_full_dataset=True, force_reload=False
 ):
     if use_full_dataset:
         cache_path = "dataset_full_cache"
     else:
         cache_path = "dataset_cache"
 
-    if os.path.exists(cache_path):
+    if not force_reload and os.path.exists(cache_path):
         print("Loading cached dataset...")
         dataset = DatasetDict.load_from_disk(cache_path)
+        print(dataset)
         return dataset
 
     dataset = load_dataset(frac, train_size, use_full_dataset)
