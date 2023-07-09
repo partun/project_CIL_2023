@@ -13,23 +13,29 @@ def load_dataset(frac=1, train_size=0.8, use_full_dataset=True):
         neg_path = "../twitter-datasets/train_neg_notabs.csv"
         pos_path = "../twitter-datasets/train_pos_notabs.csv"
 
-    tweets_neg = pd.read_csv(
-        neg_path,
-        sep="\t",
-        lineterminator="\n",
-        encoding="utf8",
-        names=["tweet"],
-        quoting=3,
-    )
+    with open(neg_path, "r") as neg_file:
+        tweets_neg = pd.read_csv(
+            neg_file,
+            sep="\t",
+            lineterminator="\n",
+            encoding="utf8",
+            names=["tweet"],
+            quoting=3,
+        )
+        neg_file.seek(0)
+        assert len(tweets_neg) == len(neg_file.readlines())
 
-    tweets_pos = pd.read_csv(
-        pos_path,
-        sep="\t",
-        lineterminator="\n",
-        encoding="utf8",
-        names=["tweet"],
-        quoting=3,
-    )
+    with open(pos_path, "r") as pos_file:
+        tweets_pos = pd.read_csv(
+            pos_file,
+            sep="\t",
+            lineterminator="\n",
+            encoding="utf8",
+            names=["tweet"],
+            quoting=3,
+        )
+        pos_file.seek(0)
+        assert len(tweets_pos) == len(pos_file.readlines())
 
     tweets_neg["label"] = 0
     tweets_pos["label"] = 1
@@ -62,16 +68,19 @@ def load_dataset(frac=1, train_size=0.8, use_full_dataset=True):
     )
 
     if use_full_dataset:
-        test_dataset = pd.read_csv(
-            "../twitter-datasets/test_data_notabs.csv",
-            sep="\t",
-            lineterminator="\n",
-            encoding="utf8",
-            names=["id", "tweet"],
-            header=None,
-            quoting=3,
-        )
-        print(len(test_dataset))
+        with open("../twitter-datasets/test_data_notabs.csv", "r") as test_file:
+            test_dataset = pd.read_csv(
+                test_file,
+                sep="\t",
+                lineterminator="\n",
+                encoding="utf8",
+                names=["id", "tweet"],
+                header=None,
+                quoting=3,
+            )
+            test_file.seek(0)
+            assert len(test_dataset) == len(test_file.readlines())
+
         dataset["test"] = Dataset.from_pandas(
             test_dataset,
             features=Features({"tweet": Value("string"), "id": Value("int64")}),
