@@ -14,3 +14,4 @@ bert/dataset_full_cache
 bert/dataset_chache
 
 __pycache__
+.DS_Store
