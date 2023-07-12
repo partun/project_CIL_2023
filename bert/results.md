@@ -35,6 +35,29 @@
 | 2      |                | 0.865               |
 | 3      | 0.883          | 0.871               |
 
+## hashtag
+- batch size = 16
+- learning_rate = 0.0001
+- tokenizer_model = "distilbert-base-uncased"
+- nn_model = "prajjwal1/bert-mini"
+- binary cross entropy loss function
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 2      | 0.881          | 0.869               |
+| 3      | 0.887          | 0.873               |
+
+
+- batch size = 16
+- learning_rate = 0.00001
+- tokenizer_model = "distilbert-base-uncased"
+- nn_model = "prajjwal1/bert-mini"
+- binary cross entropy loss function
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 2      | 0.887          | 0.878               |
+| 3      | 0.895          | 0.883               |
 
 ## no emojis
 
@@ -87,6 +110,19 @@
 | ------ | -------------- | ------------------- |
 | 1      | -              | 0.858               |
 | 2      | 0.875          | 0.867               |
+
+
+## no stopwords & hashtag split
+- batch size = 16
+- learning_rate = 0.0001
+- tokenizer_model = "distilbert-base-uncased"
+- nn_model = "prajjwal1/bert-mini"
+- binary cross entropy loss function
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 2      | 0.877          | 0.864               |
+| 3      | 0.881          | 0.868               |
 
 
 ## full
