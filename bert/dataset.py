@@ -5,13 +5,30 @@ from transformers import AutoTokenizer
 import os
 
 
-def load_dataset(frac=1, train_size=0.8, use_full_dataset=True):
-    if use_full_dataset:
-        neg_path = "../twitter-datasets/train_neg_full_notabs.csv"
-        pos_path = "../twitter-datasets/train_pos_full_notabs.csv"
-    else:
-        neg_path = "../twitter-datasets/train_neg_notabs.csv"
-        pos_path = "../twitter-datasets/train_pos_notabs.csv"
+def load_dataset(dataset_type: str, frac=1, train_size=0.8):
+    test_path = None
+    match dataset_type:
+        case "full":
+            neg_path = "../twitter-datasets/train_neg_full_notabs.csv"
+            pos_path = "../twitter-datasets/train_pos_full_notabs.csv"
+            test_path = "../twitter-datasets/test_data_notabs.csv"
+        case "small":
+            neg_path = "../twitter-datasets/train_neg_notabs.csv"
+            pos_path = "../twitter-datasets/train_pos_notabs.csv"
+        case "noemoji":
+            neg_path = "../twitter-datasets/train_neg_full_without_emoji.csv"
+            pos_path = "../twitter-datasets/train_pos_full_without_emoji.csv"
+            test_path = "../twitter-datasets/test_data_without_emoji.csv"
+        case "nostopwords":
+            neg_path = "../twitter-datasets/train_neg_full_no_stopwords.csv"
+            pos_path = "../twitter-datasets/train_pos_full_no_stopwords.csv"
+            test_path = "../twitter-datasets/test_data_no_stopwords.csv"
+        case "nopunctuation":
+            neg_path = "../twitter-datasets/train_neg_full_no_punctuation.csv"
+            pos_path = "../twitter-datasets/train_pos_full_no_punctuation.csv"
+            test_path = "../twitter-datasets/test_data_no_punctuation.csv"
+        case _:
+            raise ValueError("Invalid dataset type")
 
     with open(neg_path, "r") as neg_file:
         tweets_neg = pd.read_csv(
@@ -67,8 +84,8 @@ def load_dataset(frac=1, train_size=0.8, use_full_dataset=True):
         }
     )
 
-    if use_full_dataset:
-        with open("../twitter-datasets/test_data_notabs.csv", "r") as test_file:
+    if test_path is not None:
+        with open(test_path, "r") as test_file:
             test_dataset = pd.read_csv(
                 test_file,
                 sep="\t",
@@ -135,13 +152,8 @@ def tokenize_dataset(dataset, tokenizer_model):
     return encoded_dataset
 
 
-def load_and_tokenize_dataset(
-    model_config, frac=1, train_size=0.8, use_full_dataset=True, force_reload=False
-):
-    if use_full_dataset:
-        cache_path = "dataset_full_cache"
-    else:
-        cache_path = "dataset_cache"
+def load_and_tokenize_dataset(model_config, frac=1, train_size=0.8, force_reload=False):
+    cache_path = f"dataset_{model_config.dataset_type}_cache"
 
     if not force_reload and os.path.exists(cache_path):
         print("Loading cached dataset...")
@@ -149,7 +161,7 @@ def load_and_tokenize_dataset(
         print(dataset)
         return dataset
 
-    dataset = load_dataset(frac, train_size, use_full_dataset)
+    dataset = load_dataset(model_config.dataset_type, frac, train_size)
     dataset = tokenize_dataset(dataset, model_config.tokenizer_model)
 
     dataset.save_to_disk(cache_path)

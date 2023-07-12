@@ -15,3 +15,7 @@ bert/dataset_cache
 
 __pycache__
 .DS_Store
+bert/dataset_nostopwords_cache
+bert/dataset_noemoji_cache
+bert/dataset_nopunctuation_cache
+bert/bert_mini_3_epoch_full_results.csv

@@ -6,7 +6,77 @@
 - nn_model = "prajjwal1/bert-mini"
 - binary cross entropy loss function
 
-| Epochs | Train Accuracy | Train Accuracy |
-| ------ | -------------- | -------------- |
-| 2      | 0.881          | 0.871          |
-| 3      | 0.890          | 0.875          |
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 2      | 0.881          | 0.871               |
+| 3      | 0.890          | 0.875               |
+
+
+## no emojis
+
+- tokenizer_model  = distilbert-base-uncased
+- nn_model         = prajjwal1/bert-mini
+- device           = cuda
+- train_batch_size = 16
+- valid_batch_size = 16
+- epochs           = 2
+- learning_rate    = 1e-05
+- dataset_type     = noemoji
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | -              | 0.871               |
+| 2      | 0.887          | 0.879               |
+
+
+## no stopwords
+
+- tokenizer_model  = distilbert-base-uncased
+- nn_model         = prajjwal1/bert-mini
+- device           = cuda
+- train_batch_size = 16
+- valid_batch_size = 16
+- epochs           = 2
+- learning_rate    = 1e-05
+- dataset_type     = nostopwords
+- force_reload_dataset = False
+
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | -              | 0.857               |
+| 2      | 0.874          | 0.865               |
+
+## no punctuation
+- tokenizer_model  = distilbert-base-uncased
+- nn_model         = prajjwal1/bert-mini
+- device           = cuda
+- train_batch_size = 16
+- valid_batch_size = 16
+- epochs           = 2
+- learning_rate    = 1e-05
+- dataset_type     = nopunctuation
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | -              | 0.858               |
+| 2      | 0.875          | 0.867               |
+
+
+## full
+- tokenizer_model  = distilbert-base-uncased
+- nn_model         = prajjwal1/bert-mini
+- device           = cuda
+- train_batch_size = 16
+- valid_batch_size = 16
+- epochs           = 2
+- learning_rate    = 1e-05
+- dataset_type     = full
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | -              | 0.871               |
+| 2      | 0.887          | 0.878               |

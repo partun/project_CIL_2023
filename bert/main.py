@@ -22,6 +22,7 @@ class ModelConfig(NamedTuple):
     valid_batch_size: int
     epochs: int
     learning_rate: float
+    dataset_type: str
     force_reload_dataset: bool
 
     def __repr__(self) -> str:
@@ -207,8 +208,9 @@ def main():
         device="cuda" if cuda.is_available() else "cpu",
         train_batch_size=16,
         valid_batch_size=16,
-        epochs=1,
+        epochs=2,
         learning_rate=1e-05,
+        dataset_type="full",
         force_reload_dataset=False,
     )
 
@@ -220,7 +222,6 @@ def main():
     dataset = load_and_tokenize_dataset(
         model_config,
         frac=1,
-        use_full_dataset=True,
         train_size=0.8,
         force_reload=model_config.force_reload_dataset,
     )
@@ -240,13 +241,13 @@ def main():
 
     # load_model(model, "bert_mini_3_epoch_full.pkl")
     train_model(model, model_config, training_loader, validation_loader)
-    # save_model(model, "bert_mini_3_epoch_full.pkl")
+    save_model(model, "bert_mini_2_epoch_full.pkl")
 
     eval_model(model, model_config, training_loader, validation_loader)
 
-    generate_predictions(
-        model, model_config, dataset["test"], "bert_mini_3_epoch_full_results.csv"
-    )
+    # generate_predictions(
+    #     model, model_config, dataset["test"], "bert_mini_3_epoch_full_results.csv"
+    # )
 
 
 if __name__ == "__main__":
