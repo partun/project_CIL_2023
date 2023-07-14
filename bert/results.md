@@ -148,3 +148,18 @@
 | ------ | -------------- | ------------------- |
 | 1      | -              | 0.871               |
 | 2      | 0.887          | 0.878               |
+
+## RoBERTa
+- tokenizer_model  = roberta-base
+- nn_model         = roberta-base
+- device           = cuda
+- train_batch_size = 16
+- valid_batch_size = 16
+- epochs           = 1
+- learning_rate    = 1e-05
+- dataset_type     = full
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.911          | 0.899               |
