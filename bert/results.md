@@ -166,7 +166,7 @@
 
 ## XLNet
 
-# 1. Fine-tune the entire model
+### 1. Fine-tune the entire model
 - tokenizer_model  = xlnet-base-cased
 - nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
 - device           = cuda
@@ -180,7 +180,7 @@
 | ------ | -------------- | ------------------- |
 | 1      | 0.909          | 0.896               |
 
-# 2. Only fine-tune the last 4 hidden layers (totally 12 layers)
+### 2. Only fine-tune the last 4 hidden layers (totally 12 layers)
 - tokenizer_model  = xlnet-base-cased
 - nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
 - device           = cuda
@@ -196,7 +196,7 @@
 | 2      | 0.886          | 0.880               |
 | 3      | 0.893          | 0.883               |
 
-# 3. Only fine-tune the last 4 hidden layers, weighted average them as the final representation
+### 3. Only fine-tune the last 4 hidden layers, weighted average them as the final representation
 - tokenizer_model  = xlnet-base-cased
 - nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
 - device           = cuda
