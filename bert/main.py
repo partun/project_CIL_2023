@@ -16,6 +16,7 @@ np.random.seed(1)
 
 class ModelConfig(NamedTuple):
     tokenizer_model: str
+    max_length: int
     nn_model: str
     device: str
     train_batch_size: int
@@ -33,13 +34,19 @@ class ModelConfig(NamedTuple):
 
 
 class BERTClass(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, model: str):
+        match model:
+            case "prajjwal1/bert-small":
+                width = 512
+            case "prajjwal1/bert-mini":
+                width = 256
+            case "prajjwal1/bert-tiny":
+                width = 128
+
         super(BERTClass, self).__init__()
-        self.l1 = transformers.BertModel.from_pretrained(
-            "prajjwal1/bert-mini", return_dict=False
-        )
-        self.l2 = torch.nn.Dropout(0.3)
-        self.l3 = torch.nn.Linear(256, 1)
+        self.l1 = transformers.BertModel.from_pretrained(model, return_dict=False)
+        self.l2 = torch.nn.Dropout(0.5)
+        self.l3 = torch.nn.Linear(width, 1)
         self.l4 = torch.nn.Sigmoid()
 
     def forward(self, ids, mask, token_type_ids):
@@ -72,6 +79,9 @@ def train_model(model, model_config: ModelConfig, train_data, val_data):
             miniters=200,
         ) as bar:
             bar.set_description(f"Epoch {epoch}")
+
+            correct_cnt = 0
+            cnt = 0
             for i, batch in enumerate(bar):
                 # take a batch
 
@@ -83,6 +93,8 @@ def train_model(model, model_config: ModelConfig, train_data, val_data):
                     batch["token_type_ids"].to(device, dtype=torch.long),
                 )
                 loss = loss_fn(y_pred, y_batch)
+                cnt += len(y_batch)
+                correct_cnt += int((y_pred.round() == y_batch).int().sum())
 
                 # backward pass
                 optimizer.zero_grad()
@@ -93,7 +105,14 @@ def train_model(model, model_config: ModelConfig, train_data, val_data):
 
                 if i % 200 == 0:
                     acc = (y_pred.round() == y_batch).float().mean()
-                    bar.set_postfix(loss=f"{float(loss):.3f}", acc=f"{float(acc):.3f}")
+                    bar.set_postfix(
+                        loss=f"{float(loss):.3f}",
+                        acc=f"{float(acc):.3f}",
+                        total_acc=f"{correct_cnt/cnt:.3f}",
+                    )
+
+            acc = correct_cnt / cnt
+            print(f"Epoch {epoch} training accuracy: {acc:.3f}")
 
         # evaluate accuracy at end of each epoch
         model.eval()
@@ -198,25 +217,27 @@ def load_model(model, path):
     """
     Load the model from the given path
     """
+    print(f"Loading model from {path}")
     model.load_state_dict(torch.load(path))
 
 
 def main():
     model_config = ModelConfig(
         tokenizer_model="distilbert-base-uncased",
+        max_length=45,
         nn_model="prajjwal1/bert-mini",
         device="cuda" if cuda.is_available() else "cpu",
-        train_batch_size=16,
-        valid_batch_size=16,
-        epochs=2,
-        learning_rate=1e-05,
-        dataset_type="full",
+        train_batch_size=64,
+        valid_batch_size=64,
+        epochs=6,
+        learning_rate=1e-04,
+        dataset_type="combined",
         force_reload_dataset=False,
     )
 
     print(model_config)
 
-    model = BERTClass()
+    model = BERTClass(model=model_config.nn_model)
     model.to(model_config.device)
 
     dataset = load_and_tokenize_dataset(
@@ -239,11 +260,16 @@ def main():
         num_workers=0,
     )
 
-    # load_model(model, "bert_mini_3_epoch_full.pkl")
+    load_model(model, "bert_mini_4_epoch_combined_8.pkl")
     train_model(model, model_config, training_loader, validation_loader)
-    save_model(model, "bert_mini_2_epoch_full.pkl")
+    save_model(model, "bert_mini_10_epoch_combined_8.pkl")
 
-    eval_model(model, model_config, training_loader, validation_loader)
+    # eval_model(model, model_config, training_loader, validation_loader)
+
+    # train_model(model, model_config, training_loader, validation_loader)
+    # save_model(model, "bert_mini_4_epoch_combined_8.pkl")
+
+    # eval_model(model, model_config, training_loader, validation_loader)
 
     # generate_predictions(
     #     model, model_config, dataset["test"], "bert_mini_3_epoch_full_results.csv"

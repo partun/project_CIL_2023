@@ -113,12 +113,12 @@ def load_dataset(dataset_type: str, frac=1, train_size=0.8):
     return dataset
 
 
-def get_preprocess(tokenizer):
+def get_preprocess(tokenizer, model_config):
     def preprocess(examples):
         input = tokenizer(
             examples["tweet"],
             truncation=True,
-            max_length=45,
+            max_length=model_config.max_length,
             padding="max_length",
             pad_to_max_length=True,
             return_token_type_ids=True,
@@ -146,10 +146,10 @@ def get_preprocess(tokenizer):
     return preprocess
 
 
-def tokenize_dataset(dataset, tokenizer_model):
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_model)
+def tokenize_dataset(dataset, model_config):
+    tokenizer = AutoTokenizer.from_pretrained(model_config.tokenizer_model)
 
-    encoded_dataset = dataset.map(get_preprocess(tokenizer), batched=True)
+    encoded_dataset = dataset.map(get_preprocess(tokenizer, model_config), batched=True)
 
     print("tokenized dataset successfully!")
     print(encoded_dataset)
@@ -166,7 +166,7 @@ def load_and_tokenize_dataset(model_config, frac=1, train_size=0.8, force_reload
         return dataset
 
     dataset = load_dataset(model_config.dataset_type, frac, train_size)
-    dataset = tokenize_dataset(dataset, model_config.tokenizer_model)
+    dataset = tokenize_dataset(dataset, model_config)
 
     dataset.save_to_disk(cache_path)
     return dataset

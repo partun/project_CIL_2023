@@ -148,3 +148,156 @@
 | ------ | -------------- | ------------------- |
 | 1      | -              | 0.871               |
 | 2      | 0.887          | 0.878               |
+
+
+# combined: no emoji + hashtag splitting + spell check
+
+- tokenizer_model  = distilbert-base-uncased
+- nn_model         = prajjwal1/bert-mini
+- device           = cuda
+- train_batch_size = 16
+- valid_batch_size = 16
+- epochs           = 2
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = False
+
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | -              | 0.870               |
+| 2      | 0.886          | 0.878               |
+| 3      | -              | 0.881               |
+| 3      | 0.899          | 0.884               |
+
+
+# combined 3: no emoji + hashtag splitting + spell check
+
+- tokenizer_model  = prajjwal1/bert-mini
+- max_length       = 40
+- nn_model         = prajjwal1/bert-mini
+- device           = cuda
+- train_batch_size = 16
+- valid_batch_size = 16
+- epochs           = 2
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = True
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | -              | 0.869               |
+| 2      | 0.883          | 0.875               |
+
+
+# combined 4: no emoji + hashtag splitting + spell check
+
+- tokenizer_model  = distilbert-base-uncased
+- max_length       = 45
+- nn_model         = prajjwal1/bert-mini
+- device           = cuda
+- train_batch_size = 64
+- valid_batch_size = 64
+- epochs           = 2
+- learning_rate    = 0.0001
+- dataset_type     = combined
+- force_reload_dataset = True
+
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | -              | 0.871               |
+| 2      | 0.895          | 0.879               |
+| 3      | -              | 0.881               |
+| 4      | 0.914          | 0.883               |
+
+
+# combined 5: no emoji + hashtag splitting + spell check
+
+- tokenizer_model  = distilbert-base-uncased
+- max_length       = 45
+- nn_model         = prajjwal1/bert-mini
+- device           = cuda
+- train_batch_size = 64
+- valid_batch_size = 64
+- epochs           = 2
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = False
+
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | -              | 0.861               |
+| 2      | -              | 0.870               |
+
+
+# combined 6: no emoji + hashtag splitting + spell check
+
+- tokenizer_model  = distilbert-base-uncased
+- max_length       = 45
+- nn_model         = prajjwal1/bert-small
+- device           = cuda
+- train_batch_size = 64
+- valid_batch_size = 64
+- epochs           = 2
+- learning_rate    = 0.0001
+- dataset_type     = combined
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | -              | 0.877               |
+| 2      | 0.901          | 0.880               |
+| 3      | -              | 0.883               |
+| 4      | 0.922          | 0.883               |
+
+
+# combined 7:
+
+- tokenizer_model  = distilbert-base-uncased
+- max_length       = 45
+- nn_model         = prajjwal1/bert-tiny
+- device           = cuda
+- train_batch_size = 64
+- valid_batch_size = 64
+- epochs           = 2
+- learning_rate    = 0.0001
+- dataset_type     = combined
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | -              | 0.858               |
+| 2      | 0.877          | 0.864               |
+| 3      | -              | 0.868               |
+| 4      | 0.893          | 0.870               |
+
+
+# combined 8:
+
+- tokenizer_model  = distilbert-base-uncased
+- max_length       = 45
+- dropout          = 0.5
+- nn_model         = prajjwal1/bert-mini
+- device           = cuda
+- train_batch_size = 32
+- valid_batch_size = 32
+- epochs           = 2
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | -              | 0.866               |
+| 2      | 0.881          | 0.875               |
+| 3      | -              | 0.878               |
+| 4      | 0.894          | 0.882               |
+| 5      | 0.886          | 0.883               |
+| 6      | 0.890          | 0.885               |
+| 7      | 0.894          | 0.886               |
+| 8      | 0.897          | 0.884               |
+| 9      | 0.900          | 0.886               |
+| 10     | 0.903          | 0.886               |
+
