@@ -150,7 +150,7 @@
 | 2      | 0.887          | 0.878               |
 
 
-# combined: no emoji + hashtag splitting + spell check
+## combined: no emoji + hashtag splitting + spell check
 
 - tokenizer_model  = distilbert-base-uncased
 - nn_model         = prajjwal1/bert-mini
@@ -171,7 +171,7 @@
 | 3      | 0.899          | 0.884               |
 
 
-# combined 3: no emoji + hashtag splitting + spell check
+## combined 3: no emoji + hashtag splitting + spell check
 
 - tokenizer_model  = prajjwal1/bert-mini
 - max_length       = 40
@@ -190,7 +190,7 @@
 | 2      | 0.883          | 0.875               |
 
 
-# combined 4: no emoji + hashtag splitting + spell check
+## combined 4: no emoji + hashtag splitting + spell check
 
 - tokenizer_model  = distilbert-base-uncased
 - max_length       = 45
@@ -212,7 +212,7 @@
 | 4      | 0.914          | 0.883               |
 
 
-# combined 5: no emoji + hashtag splitting + spell check
+## combined 5: no emoji + hashtag splitting + spell check
 
 - tokenizer_model  = distilbert-base-uncased
 - max_length       = 45
@@ -232,7 +232,7 @@
 | 2      | -              | 0.870               |
 
 
-# combined 6: no emoji + hashtag splitting + spell check
+## combined 6: no emoji + hashtag splitting + spell check
 
 - tokenizer_model  = distilbert-base-uncased
 - max_length       = 45
@@ -253,7 +253,7 @@
 | 4      | 0.922          | 0.883               |
 
 
-# combined 7:
+## combined 7:
 
 - tokenizer_model  = distilbert-base-uncased
 - max_length       = 45
@@ -274,7 +274,7 @@
 | 4      | 0.893          | 0.870               |
 
 
-# combined 8:
+## combined 8:
 
 - tokenizer_model  = distilbert-base-uncased
 - max_length       = 45
@@ -301,3 +301,66 @@
 | 9      | 0.900          | 0.886               |
 | 10     | 0.903          | 0.886               |
 
+## RoBERTa
+- tokenizer_model  = roberta-base
+- nn_model         = roberta-base
+- device           = cuda
+- train_batch_size = 16
+- valid_batch_size = 16
+- epochs           = 1
+- learning_rate    = 1e-05
+- dataset_type     = full
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.911          | 0.899               |
+
+## XLNet
+
+### 1. Fine-tune the entire model
+- tokenizer_model  = xlnet-base-cased
+- nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
+- device           = cuda
+- train_batch_size = 16
+- valid_batch_size = 16
+- learning_rate    = 1e-05
+- dataset_type     = full
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.909          | 0.896               |
+
+### 2. Only fine-tune the last 4 hidden layers (totally 12 layers)
+- tokenizer_model  = xlnet-base-cased
+- nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
+- device           = cuda
+- train_batch_size = 16
+- valid_batch_size = 16
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.877          | 0.873               |
+| 2      | 0.886          | 0.880               |
+| 3      | 0.893          | 0.883               |
+
+### 3. Only fine-tune the last 4 hidden layers, weighted average them as the final representation
+- tokenizer_model  = xlnet-base-cased
+- nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
+- device           = cuda
+- train_batch_size = 16
+- valid_batch_size = 16
+- epochs           = 1
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.874          | 0.871               |
+| 2      |                | 0.878               |
+| 3      | 0.892          | 0.883               |
