@@ -1,5 +1,11 @@
-from dataset import load_dataset, tokenize_dataset, load_and_tokenize_dataset
+from dataset import (
+    load_dataset,
+    tokenize_dataset,
+    load_and_tokenize_dataset,
+    get_obervation_dataset,
+)
 import transformers
+from transformers import RobertaModel, AutoModelForSequenceClassification
 import torch
 from typing import NamedTuple
 from tqdm import tqdm
@@ -45,7 +51,7 @@ class BERTClass(torch.nn.Module):
 
         super(BERTClass, self).__init__()
         self.l1 = transformers.BertModel.from_pretrained(model, return_dict=False)
-        self.l2 = torch.nn.Dropout(0.5)
+        self.l2 = torch.nn.Dropout(0.3)
         self.l3 = torch.nn.Linear(width, 1)
         self.l4 = torch.nn.Sigmoid()
 
@@ -57,7 +63,31 @@ class BERTClass(torch.nn.Module):
         return output
 
 
-def train_model(model, model_config: ModelConfig, train_data, val_data):
+class RoBERTaClass(torch.nn.Module):
+    def __init__(self):
+        super(RoBERTaClass, self).__init__()
+        self.l1 = RobertaModel.from_pretrained("roberta-base", return_dict=False)
+        self.l2 = torch.nn.Dropout(0.3)
+        self.l3 = torch.nn.Linear(768, 1)
+        self.l4 = torch.nn.Sigmoid()
+
+    def forward(self, ids, mask, token_type_ids):
+        _, output = self.l1(ids, attention_mask=mask, token_type_ids=token_type_ids)
+        output = self.l2(output)
+        output = self.l3(output)
+        output = self.l4(output)
+        return output
+
+
+def train_model(
+    model,
+    model_config: ModelConfig,
+    train_data,
+    val_data,
+    *,
+    store_model=False,
+    store_path_tmpl=None,
+):
     """
     Train the model
     """
@@ -75,8 +105,9 @@ def train_model(model, model_config: ModelConfig, train_data, val_data):
         with tqdm(
             train_data,
             unit="batch",
-            mininterval=0,
-            miniters=200,
+            # mininterval=5,
+            # maxinterval=10,
+            miniters=50,
         ) as bar:
             bar.set_description(f"Epoch {epoch}")
 
@@ -93,8 +124,6 @@ def train_model(model, model_config: ModelConfig, train_data, val_data):
                     batch["token_type_ids"].to(device, dtype=torch.long),
                 )
                 loss = loss_fn(y_pred, y_batch)
-                cnt += len(y_batch)
-                correct_cnt += int((y_pred.round() == y_batch).int().sum())
 
                 # backward pass
                 optimizer.zero_grad()
@@ -103,7 +132,10 @@ def train_model(model, model_config: ModelConfig, train_data, val_data):
                 optimizer.step()
                 # print progress
 
-                if i % 200 == 0:
+                cnt += len(y_batch)
+                correct_cnt += int((y_pred.round() == y_batch).int().sum())
+
+                if i % 50 == 0:
                     acc = (y_pred.round() == y_batch).float().mean()
                     bar.set_postfix(
                         loss=f"{float(loss):.3f}",
@@ -133,12 +165,16 @@ def train_model(model, model_config: ModelConfig, train_data, val_data):
 
         acc = correct_cnt / cnt
         print(f"Epoch {epoch} validation accuracy: {acc:.3f}")
-        if acc > best_acc:
-            best_acc = acc
-            best_weights = copy.deepcopy(model.state_dict())
+
+        if store_model and store_path_tmpl is not None:
+            save_model(model, store_path_tmpl.format(epoch))
+
+        # if acc > best_acc:
+        #     best_acc = acc
+        #     best_weights = copy.deepcopy(model.state_dict())
 
     # restore model and return best accuracy
-    model.load_state_dict(best_weights)
+    # model.load_state_dict(best_weights)
     return best_acc
 
 
@@ -179,6 +215,56 @@ def eval_model(model, model_config: ModelConfig, train_data, val_data):
 
         acc = correct_cnt / cnt
         print(f"training accuracy: {acc:.3f}")
+
+
+def observe_model(model, model_config: ModelConfig):
+    dataset = get_obervation_dataset(model_config, frac=1, train_size=0.85)
+
+    validation_loader = DataLoader(
+        dataset["validation"],
+        batch_size=model_config.valid_batch_size,
+        shuffle=False,
+        num_workers=0,
+    )
+
+    correct_output_file = "correct.csv"
+    incorrect_output_file = "incorrect.csv"
+
+    correct_file = open(correct_output_file, "w")
+    incorrect_file = open(incorrect_output_file, "w")
+    model.eval()
+    device = model_config.device
+    with torch.no_grad():
+        correct_cnt = 0
+        cnt = 0
+        for val_batch in tqdm(validation_loader, desc="Validation"):
+            y_val = val_batch["label"].to(device, dtype=torch.float32).reshape(-1, 1)
+            y_pred = model(
+                val_batch["input_ids"].to(device, dtype=torch.long),
+                val_batch["attention_mask"].to(device, dtype=torch.long),
+                val_batch["token_type_ids"].to(device, dtype=torch.long),
+            )
+            cnt += len(y_val)
+            correct = (y_pred.round() == y_val).int().cpu()
+            correct_cnt += int((y_pred.round() == y_val).int().sum())
+
+            for i, c in enumerate(correct):
+                if c == 1:
+                    print(
+                        f"{int(val_batch['label'][i])}: {val_batch['tweet'][i]}",
+                        file=correct_file,
+                    )
+                elif c == 0:
+                    print(
+                        f"{int(val_batch['label'][i])}: {val_batch['tweet'][i]}",
+                        file=incorrect_file,
+                    )
+                else:
+                    raise ValueError("incorrect value for correct")
+
+        print(f"correct: {correct_cnt/cnt:.3f}")
+        correct_file.close()
+        incorrect_file.close()
 
 
 def generate_predictions(model, model_config: ModelConfig, test_data, output_file):
@@ -223,46 +309,62 @@ def load_model(model, path):
 
 def main():
     model_config = ModelConfig(
-        tokenizer_model="distilbert-base-uncased",
+        tokenizer_model="roberta-base",
         max_length=45,
-        nn_model="prajjwal1/bert-mini",
+        nn_model="roberta-base",
         device="cuda" if cuda.is_available() else "cpu",
-        train_batch_size=64,
-        valid_batch_size=64,
-        epochs=6,
-        learning_rate=1e-04,
+        train_batch_size=32,
+        valid_batch_size=32,
+        epochs=4,
+        learning_rate=1e-05,
         dataset_type="combined",
-        force_reload_dataset=False,
+        force_reload_dataset=True,
     )
 
     print(model_config)
 
-    model = BERTClass(model=model_config.nn_model)
+    match model_config.nn_model:
+        case "cardiffnlp/twitter-roberta-base-emotion":
+            model = model = AutoModelForSequenceClassification.from_pretrained(
+                "cardiffnlp/twitter-roberta-base-emotion", num_labels=1
+            )
+        case "roberta-base":
+            model = RoBERTaClass()
+        case _:  # bert
+            model = BERTClass(model=model_config.nn_model)
     model.to(model_config.device)
 
-    dataset = load_and_tokenize_dataset(
-        model_config,
-        frac=1,
-        train_size=0.8,
-        force_reload=model_config.force_reload_dataset,
-    )
+    # dataset = load_and_tokenize_dataset(
+    #     model_config,
+    #     frac=1,
+    #     train_size=0.85,
+    #     force_reload=model_config.force_reload_dataset,
+    # )
 
-    training_loader = DataLoader(
-        dataset["train"],
-        batch_size=model_config.train_batch_size,
-        shuffle=True,
-        num_workers=0,
-    )
-    validation_loader = DataLoader(
-        dataset["validation"],
-        batch_size=model_config.valid_batch_size,
-        shuffle=False,
-        num_workers=0,
-    )
+    # training_loader = DataLoader(
+    #     dataset["train"],
+    #     batch_size=model_config.train_batch_size,
+    #     shuffle=True,
+    #     num_workers=0,
+    # )
+    # validation_loader = DataLoader(
+    #     dataset["validation"],
+    #     batch_size=model_config.valid_batch_size,
+    #     shuffle=False,
+    #     num_workers=0,
+    # )
 
-    load_model(model, "bert_mini_4_epoch_combined_8.pkl")
-    train_model(model, model_config, training_loader, validation_loader)
-    save_model(model, "bert_mini_10_epoch_combined_8.pkl")
+    load_model(model, "roberta_3_epoch_combined_0.pkl")
+    # train_model(
+    #     model,
+    #     model_config,
+    #     training_loader,
+    #     validation_loader,
+    #     store_model=True,
+    #     store_path_tmpl="roberta_{}_epoch_combined_0.pkl",
+    # )
+
+    observe_model(model, model_config)
 
     # eval_model(model, model_config, training_loader, validation_loader)
 

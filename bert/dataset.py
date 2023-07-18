@@ -1,7 +1,7 @@
 import pandas as pd
 import torch
 from datasets import Features, ClassLabel, Value, Dataset, DatasetDict
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, RobertaTokenizer
 import os
 
 
@@ -113,7 +113,7 @@ def load_dataset(dataset_type: str, frac=1, train_size=0.8):
     return dataset
 
 
-def get_preprocess(tokenizer, model_config):
+def get_preprocess(tokenizer, model_config, *, include_tweet=False):
     def preprocess(examples):
         input = tokenizer(
             examples["tweet"],
@@ -129,12 +129,16 @@ def get_preprocess(tokenizer, model_config):
         token_type_ids = torch.tensor(input["token_type_ids"], dtype=torch.long)
 
         if "label" in examples:
-            return {
+            output = {
                 "input_ids": input_ids,
                 "attention_mask": attention_mask,
                 "token_type_ids": token_type_ids,
                 "label": examples["label"],
             }
+            if include_tweet:
+                output["tweet"] = examples["tweet"]
+            return output
+
         else:
             return {
                 "input_ids": input_ids,
@@ -146,10 +150,12 @@ def get_preprocess(tokenizer, model_config):
     return preprocess
 
 
-def tokenize_dataset(dataset, model_config):
+def tokenize_dataset(dataset, model_config, *, include_tweet=False):
     tokenizer = AutoTokenizer.from_pretrained(model_config.tokenizer_model)
-
-    encoded_dataset = dataset.map(get_preprocess(tokenizer, model_config), batched=True)
+    encoded_dataset = dataset.map(
+        get_preprocess(tokenizer, model_config, include_tweet=include_tweet),
+        batched=True,
+    )
 
     print("tokenized dataset successfully!")
     print(encoded_dataset)
@@ -157,7 +163,9 @@ def tokenize_dataset(dataset, model_config):
 
 
 def load_and_tokenize_dataset(model_config, frac=1, train_size=0.8, force_reload=False):
-    cache_path = f"dataset_{model_config.dataset_type}_cache"
+    cache_path = (
+        f"dataset_{model_config.dataset_type}_{model_config.tokenizer_model}_cache"
+    )
 
     if not force_reload and os.path.exists(cache_path):
         print("Loading cached dataset...")
@@ -169,4 +177,14 @@ def load_and_tokenize_dataset(model_config, frac=1, train_size=0.8, force_reload
     dataset = tokenize_dataset(dataset, model_config)
 
     dataset.save_to_disk(cache_path)
+    return dataset
+
+
+def get_obervation_dataset(model_config, frac=1, train_size=0.8):
+    dataset = load_dataset(model_config.dataset_type, frac, train_size)
+    dataset.pop("test")
+    dataset.pop("train")
+
+    dataset = tokenize_dataset(dataset, model_config, include_tweet=True)
+
     return dataset

@@ -316,6 +316,29 @@
 | ------ | -------------- | ------------------- |
 | 1      | 0.911          | 0.899               |
 
+
+### RoBERTa run 2
+- tokenizer_model  = roberta-base
+- max_length       = 45
+- nn_model         = roberta-base
+- device           = cuda
+- train_batch_size = 32
+- valid_batch_size = 32
+- epochs           = 4
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = True
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.884          | 0.897               |
+| 2      | 0.904          | 0.903               |
+| 3      | 0.914          | 0.903               |
+| 4      | 0.924          | 0.904               |
+
+
+
+
 ## XLNet
 
 ### 1. Fine-tune the entire model
