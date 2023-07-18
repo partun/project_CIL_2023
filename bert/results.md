@@ -423,10 +423,12 @@
 - learning_rate    = 1e-05
 - dataset_type     = Combined
 - force_reload_dataset = False
+  
 | Epochs | Train Accuracy | Validation Accuracy |
 | ------ | -------------- | ------------------- |
 | 1      | 0.811          | 0.810               |
 | 2      | 0.814          | 0.814               |
+
 
 
 
