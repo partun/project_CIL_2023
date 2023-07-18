@@ -412,7 +412,7 @@
 | ------ | -------------- | ------------------- |
 | 1      | 0.905          | 0.894               |
 | 2      | 0.921          | 0.899               |
-| 3      | 0.934          | 0.921               |
+| 3      | 0.934          | 0.901               |
 
 ### 7. Fine-tune the last 6 layers, concatenate last 4 as final representation (Combined) (7.18)
 - tokenizer_model  = xlnet-base-cased
