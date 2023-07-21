@@ -336,6 +336,72 @@
 | 3      | 0.914          | 0.903               |
 | 4      | 0.924          | 0.904               |
 
+### Roberta batch_size 64
+- tokenizer_model  = roberta-base
+- max_length       = 45
+- nn_model         = roberta-base
+- device           = cuda
+- train_batch_size = 64
+- valid_batch_size = 64
+- epochs           = 2
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = True
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.884          | 0.898               |
+| 2      | 0.903          | 0.901               |
+
+### Roberta dropout 0.1
+- tokenizer_model  = roberta-base
+- max_length       = 45
+- nn_model         = roberta-base
+- device           = cuda
+- train_batch_size = 64
+- valid_batch_size = 64
+- epochs           = 3
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = True
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.884          | 0.898               |
+| 2      | 0.903          | 0.900               |
+| 2      | 0.914          | 0.903               |
+
+### Roberta one more linear layer
+- tokenizer_model  = roberta-base
+- max_length       = 45
+- nn_model         = roberta-base
+- device           = cuda
+- train_batch_size = 64
+- valid_batch_size = 64
+- epochs           = 3
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = True
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.884          | 0.897               |
+| 2      | 0.903          | 0.901               |
+
+### Roberta-large model
+- tokenizer_model  = roberta-large
+- max_length       = 45
+- nn_model         = roberta-large
+- device           = cuda
+- train_batch_size = 64
+- valid_batch_size = 64
+- epochs           = 1
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = True
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.878          | 0.898               |
 
 ## XLNet
 
@@ -513,5 +579,17 @@
 | 4      | 0.909          | 0.890               |
 
 
-
-
+## Deberta
+- tokenizer_model  = deberta-base
+- max_length       = 45
+- nn_model         = deberta-base
+- device           = cuda
+- train_batch_size = 64
+- valid_batch_size = 64
+- epochs           = 1
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = True
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.851          | 0.873               |
