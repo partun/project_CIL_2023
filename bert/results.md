@@ -337,11 +337,10 @@
 | 4      | 0.924          | 0.904               |
 
 
-
-
 ## XLNet
 
-### 1. Fine-tune the entire model (full) (7.15)
+### 1. Fine-tune the entire model (full) + linear(7.15)
+#### - representation: last hidden layer
 - tokenizer_model  = xlnet-base-cased
 - nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
 - device           = cuda
@@ -355,7 +354,8 @@
 | ------ | -------------- | ------------------- |
 | 1      | 0.909          | 0.896               |
 
-### 2. Fine-tune the entire model (Combined) (7.18)
+### 2. Fine-tune the entire model + linear 1 (7.18)
+#### - representation: last hidden layer
 - tokenizer_model  = xlnet-base-cased
 - nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
 - device           = cuda
@@ -371,7 +371,8 @@
 | 2      | 0.922          | 0.898               |
 | 3      | 0.934          | 0.900               |
 
-### 3. Fine-tune the entire model (Combined) (7.18)
+### 3. Fine-tune the entire model + linear 2 (7.18)
+#### - representation: last hidden layer
 - tokenizer_model  = xlnet-base-cased
 - nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
 - device           = cuda
@@ -386,8 +387,61 @@
 | 1      | 0.900          | 0.894               |
 | 2      | 0.922          | 0.899               |
 
+### 4. Fine-tune the entire model + linear (7.21)
+#### - representation: weighted average last 4
+- tokenizer_model  = xlnet-base-cased
+- nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
+- device           = cuda
+- train_batch_size = 32
+- valid_batch_size = 32
+- learning_rate    = 1e-05
+- dataset_type     = Combined
+- force_reload_dataset = False
 
-### 4. Only fine-tune the last 4 hidden layers (totally 12 layers) (7.15)
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.905          | 0.894               |
+| 2      | 0.921          | 0.899               |
+| 3      | 0.934          | 0.901               |
+
+### 5. Fine-tune the entire model + cnn (7.21)
+#### - representation: last 4 layers as 4 channels to cnn
+- tokenizer_model  = xlnet-base-cased
+- nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
+- device           = cuda
+- train_batch_size = 32
+- valid_batch_size = 32
+- learning_rate    = 1e-05
+- dataset_type     = Combined
+- filter number    = 256
+- kernel_size      = 3
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.906          | 0.895               |
+| 2      | 0.922          | 0.899               |
+
+### 6. Fine-tune the entire model + cnn (7.21)
+#### - representation: last 4 to cnn + middle 4 to cnn, then concat
+- tokenizer_model  = xlnet-base-cased
+- nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
+- device           = cuda
+- train_batch_size = 32
+- valid_batch_size = 32
+- learning_rate    = 1e-05
+- dataset_type     = Combined
+- filter number = 256
+- kernel_size = 3
+- force_reload_dataset = False
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.903          | 0.892               |
+| 2      | 0.921          | 0.898               |
+
+### 7. Fine-tune the last 4 layers (7.15)
+#### - representation: last 4 hidden layer
 - tokenizer_model  = xlnet-base-cased
 - nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
 - device           = cuda
@@ -403,7 +457,8 @@
 | 2      | 0.886          | 0.880               |
 | 3      | 0.893          | 0.883               |
 
-### 5. Only fine-tune the last 4 hidden layers, weighted average them as the final representation (7.15)
+### 8. Fine-tune the last 4 layers (7.15)
+#### - representation: weighted average last 4 hidden layers
 - tokenizer_model  = xlnet-base-cased
 - nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
 - device           = cuda
@@ -421,23 +476,8 @@
 | 3      | 0.892          | 0.883               |
 
 
-### 6. Fine-tune the last 6 layers, weighted average last 4 as final representation (Combined) (7.18)
-- tokenizer_model  = xlnet-base-cased
-- nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
-- device           = cuda
-- train_batch_size = 32
-- valid_batch_size = 32
-- learning_rate    = 1e-05
-- dataset_type     = Combined
-- force_reload_dataset = False
-
-| Epochs | Train Accuracy | Validation Accuracy |
-| ------ | -------------- | ------------------- |
-| 1      | 0.905          | 0.894               |
-| 2      | 0.921          | 0.899               |
-| 3      | 0.934          | 0.901               |
-
-### 7. Fine-tune the last 6 layers, concatenate last 4 as final representation (Combined) (7.18)
+### 9. Fine-tune the last 6 layers (7.18)
+#### - representation: concatenate last 4 layers (Combined)
 - tokenizer_model  = xlnet-base-cased
 - nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
 - device           = cuda
@@ -451,6 +491,26 @@
 | ------ | -------------- | ------------------- |
 | 1      | 0.811          | 0.810               |
 | 2      | 0.814          | 0.814               |
+
+### 10. Fine-tune the last 6 layers (7.21)
+#### - representation: last 4 layers as 4 channels to cnn
+- tokenizer_model  = xlnet-base-cased
+- nn_model         = Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary
+- device           = cuda
+- train_batch_size = 32
+- valid_batch_size = 32
+- learning_rate    = 1e-05
+- filter_number    = 256
+- kernel_size      = 3
+- dataset_type     = Combined
+- force_reload_dataset = False
+  
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.883          | 0.879               |
+| 2      | 0.894          | 0.885               |
+| 3      | 0.902          | 0.889               |
+| 4      | 0.909          | 0.890               |
 
 
 
