@@ -17,7 +17,7 @@ import pickle
 from pprint import pprint
 import pandas as pd
 
-np.random.seed(1)
+np.random.seed(23)
 
 
 class ModelConfig(NamedTuple):
@@ -28,6 +28,7 @@ class ModelConfig(NamedTuple):
     train_batch_size: int
     valid_batch_size: int
     epochs: int
+    start_epoch: int
     learning_rate: float
     dataset_type: str
     force_reload_dataset: bool
@@ -35,7 +36,7 @@ class ModelConfig(NamedTuple):
     def __repr__(self) -> str:
         out = "Best Transformer Config:\n"
         for k, v in zip(self._fields, self):
-            out += f"- {k:<16} = {v}\n"
+            out += f"- {k:<20} = {v}\n"
         return out
 
 
@@ -67,9 +68,11 @@ class RoBERTaClass(torch.nn.Module):
     def __init__(self):
         super(RoBERTaClass, self).__init__()
         self.l1 = RobertaModel.from_pretrained("roberta-base", return_dict=False)
-        self.l2 = torch.nn.Dropout(0.3)
-        self.l3 = torch.nn.Linear(768, 1)
-        self.l4 = torch.nn.Sigmoid()
+        print(self.l1.model.blocks[-1])
+
+        # self.l2 = torch.nn.Dropout(0.3)
+        # self.l3 = torch.nn.Linear(768, 1)
+        # self.l4 = torch.nn.Sigmoid()
 
     def forward(self, ids, mask, token_type_ids):
         _, output = self.l1(ids, attention_mask=mask, token_type_ids=token_type_ids)
@@ -77,6 +80,89 @@ class RoBERTaClass(torch.nn.Module):
         output = self.l3(output)
         output = self.l4(output)
         return output
+
+
+class RoBERTaTwitter(torch.nn.Module):
+    def __init__(self):
+        print("using RoBERTaTwitter")
+        super(RoBERTaTwitter, self).__init__()
+        self.l1 = AutoModelForSequenceClassification.from_pretrained(
+            "cardiffnlp/twitter-roberta-base-sentiment-latest",
+            # output_hidden_states=True,
+            return_dict=True,
+        )
+
+        # self.l1 = torch.nn.Sequential(*list(self.l1.children())[:-2])
+
+        # self.l2 = torch.nn.Linear(768, 768)
+        # self.l2 = torch.nn.Dropout(0.3)
+        self.l3 = torch.nn.Linear(3, 1)
+        self.l4 = torch.nn.Sigmoid()
+
+    def forward(self, ids, mask, token_type_ids):
+        output = self.l1(ids, attention_mask=mask, token_type_ids=token_type_ids)
+        # print(dir(output))
+        # print(output.hidden_states[-1][:, -1, :].shape)
+        # output = torch.mean(output[0], 1)
+
+        # output = self.l2(output.hidden_states[-1][:, -1, :])
+        output = self.l3(output.logits)
+        output = self.l4(output)
+        return output
+
+
+class RoBERTaIrony(torch.nn.Module):
+    def __init__(self):
+        print("using RoBERTaIrony")
+        super(RoBERTaIrony, self).__init__()
+        self.l1 = AutoModelForSequenceClassification.from_pretrained(
+            "cardiffnlp/twitter-roberta-base-sentiment-latest",
+            output_hidden_states=True,
+            return_dict=True,
+        )
+
+        # more complex
+        self.l2 = torch.nn.Linear(770, 770)
+        self.l3 = torch.nn.RReLU()
+        self.l4 = torch.nn.Dropout(0.3)
+        self.l5 = torch.nn.Linear(770, 1)
+        self.l6 = torch.nn.Sigmoid()
+
+        # self.l2 = torch.nn.Linear(5, 5)
+        # self.l3 = torch.nn.RReLU()
+        # self.l4 = torch.nn.Linear(5, 1)
+        # self.l5 = torch.nn.Sigmoid()
+
+    def forward(self, ids, mask, token_type_ids, irony):
+        output = self.l1(ids, attention_mask=mask, token_type_ids=token_type_ids)
+
+        # more complex
+        # hidden_states = output.hidden_states[-1][:, -1, :]
+        # output = torch.cat((output.logits, irony), 1)
+
+        # print(output.logits.shape)
+
+        output = output.hidden_states[-1][:, -1, :]
+
+        # print(output.shape)
+
+        irony = torch.nn.functional.pad(
+            irony, (0, 0, 0, output.shape[0] - irony.shape[0]), "constant", 0
+        )
+
+        output = torch.cat((output, irony), 1)
+
+        output = self.l2(output)
+        output = self.l3(output)
+        output = self.l4(output)
+        output = self.l5(output)
+        output = self.l6(output)
+        return output
+
+        # output = torch.cat((output.logits, irony), 1)
+        # output = self.l3(output)
+        # output = self.l4(output)
+        # return output
 
 
 def train_model(
@@ -92,15 +178,19 @@ def train_model(
     Train the model
     """
 
+    print(
+        f"Training model for {model_config.epochs} epochs starting at {model_config.start_epoch}"
+    )
+
     loss_fn = torch.nn.BCELoss()  # binary cross entropy
-    optimizer = torch.optim.Adam(model.parameters(), lr=model_config.learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=model_config.start_epoch)
     device = model_config.device
 
     # Hold the best model
     best_acc = -np.inf  # init to negative infinity
     best_weights = None
 
-    for epoch in range(model_config.epochs):
+    for epoch in range(model_config.start_epoch, model_config.epochs):
         model.train()
         with tqdm(
             train_data,
@@ -114,14 +204,13 @@ def train_model(
             correct_cnt = 0
             cnt = 0
             for i, batch in enumerate(bar):
-                # take a batch
-
                 # forward pass
                 y_batch = batch["label"].to(device, dtype=torch.float32).reshape(-1, 1)
                 y_pred = model(
                     batch["input_ids"].to(device, dtype=torch.long),
                     batch["attention_mask"].to(device, dtype=torch.long),
                     batch["token_type_ids"].to(device, dtype=torch.long),
+                    batch["irony"].to(device, dtype=torch.float32),
                 )
                 loss = loss_fn(y_pred, y_batch)
 
@@ -159,12 +248,13 @@ def train_model(
                     val_batch["input_ids"].to(device, dtype=torch.long),
                     val_batch["attention_mask"].to(device, dtype=torch.long),
                     val_batch["token_type_ids"].to(device, dtype=torch.long),
+                    batch["irony"].to(device, dtype=torch.float32),
                 )
                 cnt += len(y_val)
                 correct_cnt += int((y_pred.round() == y_val).int().sum())
 
         acc = correct_cnt / cnt
-        print(f"Epoch {epoch} validation accuracy: {acc:.3f}")
+        print(f"Epoch {epoch} validation accuracy: {acc:.3f}\n")
 
         if store_model and store_path_tmpl is not None:
             save_model(model, store_path_tmpl.format(epoch))
@@ -309,62 +399,63 @@ def load_model(model, path):
 
 def main():
     model_config = ModelConfig(
-        tokenizer_model="roberta-base",
+        tokenizer_model="cardiffnlp/twitter-roberta-base-sentiment-latest",
         max_length=45,
-        nn_model="roberta-base",
+        nn_model="irony",
         device="cuda" if cuda.is_available() else "cpu",
         train_batch_size=32,
         valid_batch_size=32,
-        epochs=4,
+        epochs=3,
+        start_epoch=0,
         learning_rate=1e-05,
-        dataset_type="combined",
-        force_reload_dataset=True,
+        dataset_type="irony",
+        force_reload_dataset=False,
     )
 
     print(model_config)
 
     match model_config.nn_model:
-        case "cardiffnlp/twitter-roberta-base-emotion":
-            model = model = AutoModelForSequenceClassification.from_pretrained(
-                "cardiffnlp/twitter-roberta-base-emotion", num_labels=1
-            )
+        case "irony":
+            model = RoBERTaIrony()
+        case "cardiffnlp/twitter-roberta-base-sentiment-latest":
+            model = RoBERTaTwitter()
         case "roberta-base":
             model = RoBERTaClass()
         case _:  # bert
             model = BERTClass(model=model_config.nn_model)
     model.to(model_config.device)
 
-    # dataset = load_and_tokenize_dataset(
-    #     model_config,
-    #     frac=1,
-    #     train_size=0.85,
-    #     force_reload=model_config.force_reload_dataset,
-    # )
+    dataset = load_and_tokenize_dataset(
+        model_config,
+        frac=1,
+        train_size=0.85,
+        force_reload=model_config.force_reload_dataset,
+    )
 
-    # training_loader = DataLoader(
-    #     dataset["train"],
-    #     batch_size=model_config.train_batch_size,
-    #     shuffle=True,
-    #     num_workers=0,
-    # )
-    # validation_loader = DataLoader(
-    #     dataset["validation"],
-    #     batch_size=model_config.valid_batch_size,
-    #     shuffle=False,
-    #     num_workers=0,
-    # )
+    training_loader = DataLoader(
+        dataset["train"],
+        batch_size=model_config.train_batch_size,
+        shuffle=True,
+        num_workers=0,
+    )
+    validation_loader = DataLoader(
+        dataset["validation"],
+        batch_size=model_config.valid_batch_size,
+        shuffle=False,
+        num_workers=0,
+    )
 
-    load_model(model, "roberta_3_epoch_combined_0.pkl")
-    # train_model(
-    #     model,
-    #     model_config,
-    #     training_loader,
-    #     validation_loader,
-    #     store_model=True,
-    #     store_path_tmpl="roberta_{}_epoch_combined_0.pkl",
-    # )
+    # load_model(model, "irony_roberta_0_epoch_combined_0.pkl")
+    train_model(
+        model,
+        model_config,
+        training_loader,
+        validation_loader,
+        store_model=True,
+        store_path_tmpl="irony_roberta_{}_epoch_combined_2.pkl",
+    )
 
-    observe_model(model, model_config)
+    # observe_model(model, model_config)
 
     # eval_model(model, model_config, training_loader, validation_loader)
 

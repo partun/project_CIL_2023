@@ -454,4 +454,40 @@
 
 
 
+## Twitter Roberta
+- tokenizer_model  = cardiffnlp/twitter-roberta-base-sentiment-latest
+- max_length       = 45
+- nn_model         = cardiffnlp/twitter-roberta-base-sentiment-latest
+- device           = cuda
+- train_batch_size = 32
+- valid_batch_size = 32
+- epochs           = 2
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = False
 
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.894          | 0.905               |
+| 2      | 0.913          | 0.908               |
+| 3      | 0.925          | 0.908               |
+| 4      | 0.935          | 0.907               |
+
+
+## Twitter Roberta + Irony
+- tokenizer_model  = cardiffnlp/twitter-roberta-base-sentiment-latest
+- max_length       = 45
+- nn_model         = irony
+- device           = cuda
+- train_batch_size = 32
+- valid_batch_size = 32
+- epochs           = 1
+- learning_rate    = 1e-05
+- dataset_type     = irony
+- force_reload_dataset = True
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.894          | 0.904               |
+| 2      | 0.913          | 0.908               |
+| 3      | 0.924          | 0.908               |

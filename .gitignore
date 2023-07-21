@@ -5,7 +5,6 @@
 twitter-datasets/*.txt
 twitter-datasets/*.csv
 
-!twitter-datasets/*_combined.csv
 
 twitter-datasets/*.pkl
 glove.6B.50d.txt
@@ -22,17 +21,5 @@ bert/dataset_nostopwords_cache
 bert/dataset_noemoji_cache
 bert/dataset_nopunctuation_cache
 bert/bert_mini_3_epoch_full_results.csv
-bert/dataset_combined_cache/dataset_dict.json
-bert/dataset_combined_cache/test/data-00000-of-00001.arrow
-bert/dataset_combined_cache/test/dataset_info.json
-bert/dataset_combined_cache/test/state.json
-bert/dataset_combined_cache/train/data-00000-of-00002.arrow
-bert/dataset_combined_cache/train/data-00000-of-00003.arrow
-bert/dataset_combined_cache/train/data-00001-of-00002.arrow
-bert/dataset_combined_cache/train/data-00001-of-00003.arrow
-bert/dataset_combined_cache/train/data-00002-of-00003.arrow
-bert/dataset_combined_cache/train/dataset_info.json
-bert/dataset_combined_cache/train/state.json
-bert/dataset_combined_cache/validation/data-00000-of-00001.arrow
-bert/dataset_combined_cache/validation/dataset_info.json
-bert/dataset_combined_cache/validation/state.json
+bert/dataset_combined_roberta-base_cache
+bert/*_cache
