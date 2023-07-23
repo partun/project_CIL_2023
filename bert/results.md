@@ -632,6 +632,7 @@
 - learning_rate    = 1e-05
 - dataset_type     = combined
 - force_reload_dataset = True
+- 
 | Epochs | Train Accuracy | Validation Accuracy |
 | ------ | -------------- | ------------------- |
 | 1      | 0.851          | 0.873               |
@@ -647,6 +648,7 @@
 - learning_rate    = 1e-05
 - dataset_type     = combined
 - force_reload_dataset = True
+- 
 | Epochs | Train Accuracy | Validation Accuracy |
 | ------ | -------------- | ------------------- |
 | 1      | 0.887          | 0.898               |
