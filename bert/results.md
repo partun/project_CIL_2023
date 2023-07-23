@@ -395,13 +395,16 @@
 - device           = cuda
 - train_batch_size = 64
 - valid_batch_size = 64
-- epochs           = 1
+- epochs           = 3
 - learning_rate    = 1e-05
 - dataset_type     = combined
 - force_reload_dataset = True
+
 | Epochs | Train Accuracy | Validation Accuracy |
 | ------ | -------------- | ------------------- |
 | 1      | 0.878          | 0.898               |
+| 2      | 0.904          | 0.904               |
+| 3      | 0.913          | 0.904               |
 
 ## XLNet
 
@@ -631,3 +634,21 @@
 - force_reload_dataset = True
 | Epochs | Train Accuracy | Validation Accuracy |
 | ------ | -------------- | ------------------- |
+| 1      | 0.851          | 0.873               |
+
+## cardiffnlp/twitter-xlm-roberta-base-sentiment
+- tokenizer_model  = cardiffnlp/twitter-xlm-roberta-base-sentiment
+- max_length       = 45
+- nn_model         = cardiffnlp/twitter-xlm-roberta-base-sentiment
+- device           = cuda
+- train_batch_size = 64
+- valid_batch_size = 64
+- epochs           = 3
+- learning_rate    = 1e-05
+- dataset_type     = combined
+- force_reload_dataset = True
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.887          | 0.898               |
+| 2      | 0.906          | 0.902               |
+| 3      | 0.914          | 0.903               |
