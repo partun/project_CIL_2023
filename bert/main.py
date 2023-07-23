@@ -17,7 +17,8 @@ import pickle
 from pprint import pprint
 import pandas as pd
 
-np.random.seed(23)
+np.random.seed(423)
+torch.backends.cudnn.benchmark = True
 
 
 class ModelConfig(NamedTuple):
@@ -32,6 +33,7 @@ class ModelConfig(NamedTuple):
     learning_rate: float
     dataset_type: str
     force_reload_dataset: bool
+    weight_store_template: str
 
     def __repr__(self) -> str:
         out = "Best Transformer Config:\n"
@@ -68,11 +70,10 @@ class RoBERTaClass(torch.nn.Module):
     def __init__(self):
         super(RoBERTaClass, self).__init__()
         self.l1 = RobertaModel.from_pretrained("roberta-base", return_dict=False)
-        print(self.l1.model.blocks[-1])
 
-        # self.l2 = torch.nn.Dropout(0.3)
-        # self.l3 = torch.nn.Linear(768, 1)
-        # self.l4 = torch.nn.Sigmoid()
+        self.l2 = torch.nn.Dropout(0.3)
+        self.l3 = torch.nn.Linear(768, 1)
+        self.l4 = torch.nn.Sigmoid()
 
     def forward(self, ids, mask, token_type_ids):
         _, output = self.l1(ids, attention_mask=mask, token_type_ids=token_type_ids)
@@ -108,6 +109,58 @@ class RoBERTaTwitter(torch.nn.Module):
         # output = self.l2(output.hidden_states[-1][:, -1, :])
         output = self.l3(output.logits)
         output = self.l4(output)
+        return output
+
+
+class RoBERTaTwitterEN(torch.nn.Module):
+    def __init__(self):
+        print("using RoBERTaTwitterEN")
+        super(RoBERTaTwitterEN, self).__init__()
+        self.l1 = AutoModelForSequenceClassification.from_pretrained(
+            "cardiffnlp/roberta-base-tweet-sentiment-en",
+            output_hidden_states=True,
+            return_dict=True,
+        )
+
+        self.l2 = torch.nn.Linear(3, 3)
+        self.l3 = torch.nn.RReLU()
+        self.l4 = torch.nn.Linear(3, 1)
+        self.l5 = torch.nn.Sigmoid()
+
+    def forward(self, ids, mask, token_type_ids):
+        output = self.l1(ids, attention_mask=mask, token_type_ids=token_type_ids)
+
+        output = self.l2(output[0])
+        output = self.l3(output)
+        output = self.l4(output)
+        output = self.l5(output)
+        return output
+
+
+class RoBERTaEmoji(torch.nn.Module):
+    def __init__(self):
+        print("using RoBERTaEmoji")
+        super(RoBERTaEmoji, self).__init__()
+        self.l1 = AutoModelForSequenceClassification.from_pretrained(
+            "cardiffnlp/roberta-base-emoji",
+            # output_hidden_states=True,
+            return_dict=True,
+        )
+
+        # self.l1 = torch.nn.Sequential(*list(self.l1.children())[:-2])
+
+        self.l2 = torch.nn.Linear(20, 20)
+        self.l3 = torch.nn.ReLU()
+        self.l4 = torch.nn.Linear(20, 1)
+        self.l5 = torch.nn.Sigmoid()
+
+    def forward(self, ids, mask, token_type_ids):
+        output = self.l1(ids, attention_mask=mask, token_type_ids=token_type_ids)
+
+        output = self.l2(output.logits)
+        output = self.l3(output)
+        output = self.l4(output)
+        output = self.l5(output)
         return output
 
 
@@ -183,7 +236,7 @@ def train_model(
     )
 
     loss_fn = torch.nn.BCELoss()  # binary cross entropy
-    optimizer = torch.optim.Adam(model.parameters(), lr=model_config.start_epoch)
+    optimizer = torch.optim.Adam(model.parameters(), lr=model_config.learning_rate)
     device = model_config.device
 
     # Hold the best model
@@ -210,7 +263,7 @@ def train_model(
                     batch["input_ids"].to(device, dtype=torch.long),
                     batch["attention_mask"].to(device, dtype=torch.long),
                     batch["token_type_ids"].to(device, dtype=torch.long),
-                    batch["irony"].to(device, dtype=torch.float32),
+                    # batch["irony"].to(device, dtype=torch.float32),
                 )
                 loss = loss_fn(y_pred, y_batch)
 
@@ -248,7 +301,7 @@ def train_model(
                     val_batch["input_ids"].to(device, dtype=torch.long),
                     val_batch["attention_mask"].to(device, dtype=torch.long),
                     val_batch["token_type_ids"].to(device, dtype=torch.long),
-                    batch["irony"].to(device, dtype=torch.float32),
+                    # batch["irony"].to(device, dtype=torch.float32),
                 )
                 cnt += len(y_val)
                 correct_cnt += int((y_pred.round() == y_val).int().sum())
@@ -399,22 +452,27 @@ def load_model(model, path):
 
 def main():
     model_config = ModelConfig(
-        tokenizer_model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+        tokenizer_model="cardiffnlp/roberta-base-tweet-sentiment-en",
         max_length=45,
-        nn_model="irony",
+        nn_model="cardiffnlp/roberta-base-tweet-sentiment-en",
         device="cuda" if cuda.is_available() else "cpu",
         train_batch_size=32,
         valid_batch_size=32,
-        epochs=3,
+        epochs=4,
         start_epoch=0,
         learning_rate=1e-05,
-        dataset_type="irony",
-        force_reload_dataset=False,
+        dataset_type="combined2",
+        force_reload_dataset=True,
+        weight_store_template="twitterEN_roberta_{}_epoch_combined2.pkl",
     )
 
     print(model_config)
 
     match model_config.nn_model:
+        case "cardiffnlp/roberta-base-tweet-sentiment-en":
+            model = RoBERTaTwitterEN()
+        case "cardiffnlp/roberta-base-emoji":
+            model = RoBERTaEmoji()
         case "irony":
             model = RoBERTaIrony()
         case "cardiffnlp/twitter-roberta-base-sentiment-latest":
@@ -428,7 +486,7 @@ def main():
     dataset = load_and_tokenize_dataset(
         model_config,
         frac=1,
-        train_size=0.85,
+        train_size=0.90,
         force_reload=model_config.force_reload_dataset,
     )
 
@@ -437,12 +495,14 @@ def main():
         batch_size=model_config.train_batch_size,
         shuffle=True,
         num_workers=0,
+        pin_memory=True,
     )
     validation_loader = DataLoader(
         dataset["validation"],
         batch_size=model_config.valid_batch_size,
         shuffle=False,
         num_workers=0,
+        pin_memory=True,
     )
 
     # load_model(model, "irony_roberta_0_epoch_combined_0.pkl")
@@ -452,7 +512,7 @@ def main():
         training_loader,
         validation_loader,
         store_model=True,
-        store_path_tmpl="irony_roberta_{}_epoch_combined_2.pkl",
+        store_path_tmpl=model_config.weight_store_template,
     )
 
     # observe_model(model, model_config)

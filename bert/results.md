@@ -654,3 +654,44 @@
 | 1      | 0.887          | 0.898               |
 | 2      | 0.906          | 0.902               |
 | 3      | 0.914          | 0.903               |
+
+
+## Twitter Roberta Emoji
+
+- tokenizer_model      = cardiffnlp/roberta-base-emoji
+- max_length           = 45
+- nn_model             = cardiffnlp/roberta-base-emoji
+- device               = cuda
+- train_batch_size     = 32
+- valid_batch_size     = 32
+- epochs               = 3
+- start_epoch          = 0
+- learning_rate        = 1e-05
+- dataset_type         = combined2
+- force_reload_dataset = True
+- weight_store_template = emoji_roberta_{}_epoch_combined2.pkl
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.882          | 0.895               |
+| 2      | 0.902          | 0.902               |
+| 3      | 0.913          | 0.903               |
+
+## Twitter EN
+- tokenizer_model      = cardiffnlp/roberta-base-tweet-sentiment-en
+- max_length           = 45
+- nn_model             = cardiffnlp/roberta-base-tweet-sentiment-en
+- device               = cuda
+- train_batch_size     = 32
+- valid_batch_size     = 32
+- epochs               = 4
+- start_epoch          = 0
+- learning_rate        = 1e-05
+- dataset_type         = combined2
+
+| Epochs | Train Accuracy | Validation Accuracy |
+| ------ | -------------- | ------------------- |
+| 1      | 0.883          | 0.896               |
+| 2      | 0.903          | 0.902               |
+| 3      | 0.913          | 0.904               |
+| 4      | 0.922          | 0.904               |

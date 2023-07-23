@@ -131,6 +131,10 @@ def load_dataset(dataset_type: str, frac=1, train_size=0.8):
             neg_path = "../twitter-datasets/train_neg_full_combined.csv"
             pos_path = "../twitter-datasets/train_pos_full_combined.csv"
             test_path = "../twitter-datasets/test_data_combined.csv"
+        case "combined2":
+            neg_path = "../twitter-datasets/train_neg_full_combined2.csv"
+            pos_path = "../twitter-datasets/train_pos_full_combined2.csv"
+            test_path = "../twitter-datasets/test_data_combined2.csv"
         case "irony":
             return load_dataset_irony(frac, train_size)
         case _:

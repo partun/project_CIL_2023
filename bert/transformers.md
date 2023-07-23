@@ -14,3 +14,5 @@ https://colab.research.google.com/github/huggingface/notebooks/blob/main/example
 https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest?text=%3Cuser%3E+lol+%3Ap+yea+with+your+big+wage+%21
 
 https://huggingface.co/cardiffnlp/twitter-roberta-base-irony?text=%3Cuser%3E+kak+%2C+thankyouu+%21
+
+https://huggingface.co/cardiffnlp/roberta-base-tweet-sentiment-en

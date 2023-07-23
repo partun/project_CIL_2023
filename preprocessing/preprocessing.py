@@ -262,6 +262,20 @@ def gen_combined_preprocessed_file(filename):
     assert output_lines == line_cnt
 
 
+def replace_user_and_url(filename):
+    output_filename = filename.replace("_combined.csv", "_combined2.csv")
+
+    with open(filename, "r") as input_file:
+        lines = input_file.readlines()
+
+    with open(output_filename, "w") as output_file:
+        for line in lines:
+            line = line.replace("<user>", "@user")
+            line = line.replace("<url>", "http")
+
+            output_file.write(line)
+
+
 if __name__ == "__main__":
     # preprocess_file("../twitter-datasets/train_neg.txt")
     # preprocess_file("../twitter-datasets/train_pos.txt")
@@ -272,11 +286,15 @@ if __name__ == "__main__":
     files = [
         # "../twitter-datasets/train_neg_full_notabs.csv",
         # "../twitter-datasets/train_pos_full_notabs.csv",
-        "../twitter-datasets/test_data_notabs.csv",
+        # "../twitter-datasets/test_data_notabs.csv",
+        "../twitter-datasets/train_neg_full_combined.csv",
+        "../twitter-datasets/train_pos_full_combined.csv",
+        "../twitter-datasets/test_data_combined.csv",
     ]  # Update with your filenames
 
     for filename in files:
         # get_file_without_emoji(filename)
         # remove_stop_words(filename)
         # gen_files_without_punctuation(filename)
-        gen_combined_preprocessed_file(filename)
+        # gen_combined_preprocessed_file(filename)
+        replace_user_and_url(filename)
