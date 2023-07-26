@@ -127,6 +127,14 @@ def load_dataset(dataset_type: str, frac=1, train_size=0.8):
             neg_path = "../twitter-datasets/train_neg_full_no_punctuation.csv"
             pos_path = "../twitter-datasets/train_pos_full_no_punctuation.csv"
             test_path = "../twitter-datasets/test_data_no_punctuation.csv"
+        case "split_hashtags":
+            neg_path = "../twitter-datasets/train_neg_full_split_hashtags.csv"
+            pos_path = "../twitter-datasets/train_pos_full_split_hashtags.csv"
+            test_path = "../twitter-datasets/test_data_split_hashtags.csv"
+        case "spellcheck":
+            neg_path = "../twitter-datasets/train_neg_full_spellcheck.csv"
+            pos_path = "../twitter-datasets/train_pos_full_spellcheck.csv"
+            test_path = "../twitter-datasets/test_data_spellcheck.csv"
         case "combined":
             neg_path = "../twitter-datasets/train_neg_full_combined.csv"
             pos_path = "../twitter-datasets/train_pos_full_combined.csv"

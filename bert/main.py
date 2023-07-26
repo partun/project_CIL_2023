@@ -122,17 +122,17 @@ class RoBERTaTwitterEN(torch.nn.Module):
             return_dict=True,
         )
 
-        self.l2 = torch.nn.Linear(3, 3)
-        self.l3 = torch.nn.RReLU()
+        # self.l2 = torch.nn.Linear(3, 3)
+        # self.l3 = torch.nn.RReLU()
         self.l4 = torch.nn.Linear(3, 1)
         self.l5 = torch.nn.Sigmoid()
 
     def forward(self, ids, mask, token_type_ids):
         output = self.l1(ids, attention_mask=mask, token_type_ids=token_type_ids)
 
-        output = self.l2(output[0])
-        output = self.l3(output)
-        output = self.l4(output)
+        # output = self.l2(output[0])
+        # output = self.l3(output)
+        output = self.l4(output[0])
         output = self.l5(output)
         return output
 
@@ -416,23 +416,29 @@ def generate_predictions(model, model_config: ModelConfig, test_data, output_fil
     """
     model.eval()
     device = model_config.device
+
+    output = pd.DataFrame(columns=["Id", "Prediction"])
+
     with torch.no_grad():
-        ids = test_data["id"].reshape(-1, 1)
-        y_pred = model(
-            test_data["input_ids"].to(device, dtype=torch.long),
-            test_data["attention_mask"].to(device, dtype=torch.long),
-            test_data["token_type_ids"].to(device, dtype=torch.long),
-        ).round()
+        for batch in tqdm(test_data, desc="Generating predictions"):
+            ids = batch["id"].reshape(-1, 1)
+            y_pred = model(
+                batch["input_ids"].to(device, dtype=torch.long),
+                batch["attention_mask"].to(device, dtype=torch.long),
+                batch["token_type_ids"].to(device, dtype=torch.long),
+            ).round()
 
-        # move tensors to cpu
-        ids = ids.cpu()
-        y_pred = y_pred.cpu()
+            # move tensors to cpu
+            ids = ids.cpu()
+            y_pred = y_pred.cpu()
 
-        df = pd.DataFrame({"Id": ids.squeeze(), "Prediction": y_pred.squeeze()})
-        df["Prediction"] = df["Prediction"].apply(lambda x: 1 if x == 1 else -1)
-        df.to_csv(output_file, index=False, sep=",", header=True)
+            df = pd.DataFrame({"Id": ids.squeeze(), "Prediction": y_pred.squeeze()})
+            df["Prediction"] = df["Prediction"].apply(lambda x: 1 if x == 1 else -1)
 
-        print(f"generated predictions ({output_file=})")
+            output = pd.concat([output, df])
+
+    output.to_csv(output_file, index=False, sep=",", header=True)
+    print(f"generated predictions ({output_file=})")
 
 
 def save_model(model, path):
@@ -452,9 +458,9 @@ def load_model(model, path):
 
 def main():
     model_config = ModelConfig(
-        tokenizer_model="cardiffnlp/roberta-base-tweet-sentiment-en",
+        tokenizer_model="cardiffnlp/twitter-roberta-base-sentiment-latest",
         max_length=45,
-        nn_model="cardiffnlp/roberta-base-tweet-sentiment-en",
+        nn_model="cardiffnlp/twitter-roberta-base-sentiment-latest",
         device="cuda" if cuda.is_available() else "cpu",
         train_batch_size=32,
         valid_batch_size=32,
@@ -462,8 +468,8 @@ def main():
         start_epoch=0,
         learning_rate=1e-05,
         dataset_type="combined2",
-        force_reload_dataset=True,
-        weight_store_template="twitterEN_roberta_{}_epoch_combined2.pkl",
+        force_reload_dataset=False,
+        weight_store_template="twitter_roberta_{}_epoch_combined2_1.pkl",
     )
 
     print(model_config)
@@ -504,18 +510,25 @@ def main():
         num_workers=0,
         pin_memory=True,
     )
-
-    # load_model(model, "irony_roberta_0_epoch_combined_0.pkl")
-    train_model(
-        model,
-        model_config,
-        training_loader,
-        validation_loader,
-        store_model=True,
-        store_path_tmpl=model_config.weight_store_template,
+    test_loader = DataLoader(
+        dataset["test"],
+        batch_size=model_config.valid_batch_size,
+        shuffle=False,
+        num_workers=0,
+        pin_memory=True,
     )
 
-    # observe_model(model, model_config)
+    load_model(model, "twitter_roberta_0_epoch_combined2_1.pkl")
+    # train_model(
+    #     model,
+    #     model_config,
+    #     training_loader,
+    #     validation_loader,
+    #     store_model=True,
+    #     store_path_tmpl=model_config.weight_store_template,
+    # )
+
+    observe_model(model, model_config)
 
     # eval_model(model, model_config, training_loader, validation_loader)
 
@@ -525,7 +538,10 @@ def main():
     # eval_model(model, model_config, training_loader, validation_loader)
 
     # generate_predictions(
-    #     model, model_config, dataset["test"], "bert_mini_3_epoch_full_results.csv"
+    #     model,
+    #     model_config,
+    #     test_loader,
+    #     "twitter_roberta_1_epoch_combined2_results.csv",
     # )
 
 

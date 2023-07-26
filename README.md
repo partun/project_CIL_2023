@@ -1,5 +1,3 @@
-
-
 ## Twitter  Datasets
 
 Download the tweet datasets from here:
@@ -14,21 +12,36 @@ The dataset should have the following files:
 - train_neg_full.txt: the full negative training samples
 - train_pos_full.txt: the full positive training samples
 
-## Build the Co-occurence Matrix
+And place all these files in the twitter-datasets directory.
 
-To build a co-occurence matrix, run the following commands.  (Remember to put the data files
-in the correct locations)
 
-Note that the cooc.py script takes a few minutes to run, and displays the number of tweets processed.
+## Install python requirements
 
-- build_vocab.sh
-- cut_vocab.sh
-- python3 pickle_vocab.py
-- python3 cooc.py
+We used python 3.11.3 for this project. The required packages are listed in the requirements.txt file. To install them, run the following command:
 
-##  Template for Glove Question
+``` 
+pip install -r requirements.txt
+```
 
-Your task is to fill in the SGD updates to the template
-glove_template.py
 
-Once you tested your system on the small set of 10% of all tweets, we suggest you run on the full datasets train_pos_full.txt, train_neg_full.txt
+### preprocessing of the dataset
+
+Navigate to the preprocessing directory and run the preprocessing.py file.
+This will generate multiple preprocessed csv files in the twitter-datasets directory.
+
+```
+python preprocessing.py
+```
+
+### Training the model
+
+Navigate to the bert directory and run the main.py file.
+This will first load and tokenize the data, then train the model and finally evaluate the model on the test data.
+It will also generate a submission.csv file in the format required by Kaggle.
+
+```
+python main.py
+```
+
+
+

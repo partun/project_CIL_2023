@@ -9,3 +9,5 @@ simpletransformers
 wandb
 chardet
 datasets
+autocorrect
+pywordsegment

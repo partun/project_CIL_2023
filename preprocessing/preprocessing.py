@@ -8,7 +8,15 @@ import pywordsegment
 from concurrent.futures import ProcessPoolExecutor
 
 
-def preprocess_file(filename):
+def remove_tabs_dataset(filename):
+    """
+    Removes tabs from the file and replaces them with spaces.
+
+    For the test data, the first comma is replaced with a tab.
+    This way be can split the data into index and tweet by using the tab as a delimiter.
+    , of ; can not be used as a delimiter because they are used in the tweets.
+    """
+
     output_filename = filename.replace(".txt", "_notabs.csv")
 
     with open(filename, "r") as input_file:
@@ -28,7 +36,7 @@ def preprocess_file(filename):
     print(f"Preprocessed file saved as {output_filename}")
 
 
-emoji_dict = {
+EMOJI_DICT = {
     "<3": "Lovely",
     ":D": "Happy",
     ":P": "Playful",
@@ -55,14 +63,17 @@ emoji_dict = {
 }
 
 
-# method for replacing the emojis with adjectives
-def replace_emoji(dictionary, text):
-    for key, value in dictionary.items():
-        text = text.replace(key.lower(), value.lower())
-    return text
+def replace_emojis(filename):
+    """
+    Replaces ascii emojis with adjectives that describe the emoji.
+    """
 
+    # method for replacing the emojis with adjectives
+    def replace_emojis_in_tweet(dictionary, text):
+        for key, value in dictionary.items():
+            text = text.replace(key.lower(), value.lower())
+        return text
 
-def get_file_without_emoji(filename):
     output_filename = filename.replace("_notabs.csv", "_without_emoji.csv")
 
     with open(filename, "r") as input_file:
@@ -70,7 +81,7 @@ def get_file_without_emoji(filename):
 
     modified_lines = []
     for line in lines:
-        line_without_emoji = replace_emoji(emoji_dict, line)
+        line_without_emoji = replace_emojis_in_tweet(EMOJI_DICT, line)
         modified_lines.append(line_without_emoji)
 
     with open(output_filename, "w") as output_file:
@@ -80,6 +91,9 @@ def get_file_without_emoji(filename):
 
 
 def remove_stop_words(filename):
+    """
+    Romoves all stopwords from the tweets.
+    """
     output_filename = filename.replace("_notabs.csv", "_no_stopwords.csv")
 
     SW = []
@@ -111,15 +125,22 @@ def remove_stop_words(filename):
 
 
 def remove_punctuation(text):
-    #     print(text)
     text = re.sub(r"[^\w\s\'<>#]", " ", text)
     text = re.sub(r"\s+", " ", text) + "\n"
-    #     print(text)
     return text
 
 
-def gen_files_without_punctuation(filename):
+def remove_punctuation(filename):
+    """
+    Removes all punctuation from the tweets.
+    """
+
     output_filename = filename.replace("_notabs.csv", "_no_punctuation.csv")
+
+    def remove_punctuation_from_text(text):
+        text = re.sub(r"[^\w\s\'<>#]", " ", text)
+        text = re.sub(r"\s+", " ", text) + "\n"
+        return text
 
     with open(filename, "r") as input_file:
         lines = input_file.readlines()
@@ -128,9 +149,9 @@ def gen_files_without_punctuation(filename):
     for line in lines:
         if "test" in filename:
             idx, tweet = line.split("\t", 1)
-            line_without_punctuation = f"{idx}\t{remove_punctuation(tweet)}"
+            line_without_punctuation = f"{idx}\t{remove_punctuation_from_text(tweet)}"
         else:
-            line_without_punctuation = remove_punctuation(line)
+            line_without_punctuation = remove_punctuation_from_text(line)
 
         modified_lines.append(line_without_punctuation)
 
@@ -138,6 +159,94 @@ def gen_files_without_punctuation(filename):
         output_file.writelines(modified_lines)
 
     print(f"New file without punctuation saved as {output_filename}")
+
+
+def split_hashtags(filename):
+    """
+    Removes all punctuation from the tweets.
+    """
+
+    output_filename = filename.replace("_notabs.csv", "_split_hashtags.csv")
+
+    def split_hashtags_in_text(text):
+        tokens = []
+        for t in text.rstrip().split(" "):
+            if t.startswith("#"):
+                tokens.extend(pywordsegment.WordSegmenter.segment(t))
+            else:
+                tokens.append(t)
+        return " ".join(tokens) + "\n"
+
+    with open(filename, "r") as input_file:
+        lines = input_file.readlines()
+
+    modified_lines = []
+    for line in lines:
+        if "test" in filename:
+            idx, tweet = line.split("\t", 1)
+            modified_lines.append(f"{idx}\t{split_hashtags_in_text(tweet)}")
+        else:
+            modified_lines.append(split_hashtags_in_text(line))
+
+    with open(output_filename, "w") as output_file:
+        output_file.writelines(modified_lines)
+
+    print(f"New file with split hashtags saved a {output_filename}")
+
+
+def spellcheck_test_tweets(lines):
+    spell = Speller(lang="en")
+
+    modified_lines = []
+    for line in tqdm(lines, miniters=200):
+        index, line = line.split("\t", 1)
+        tokens = line.rstrip().split(" ")
+        modified_lines.append(f'{index}\t{" ".join((spell(t) for t in tokens))}\n')
+
+    print("done")
+    return modified_lines
+
+
+def spellcheck_train_tweets(lines):
+    spell = Speller(lang="en")
+
+    modified_lines = []
+    for line in tqdm(lines, miniters=200):
+        tokens = line.rstrip().split(" ")
+        modified_lines.append(" ".join((spell(t) for t in tokens)) + "\n")
+
+
+def spellcheck(filename):
+    """
+    Runs spellcheck on the tweets.
+    """
+
+    output_filename = filename.replace("_notabs.csv", "_spellcheck.csv")
+
+    with open(filename, "r") as input_file:
+        lines = input_file.readlines()
+
+    line_cnt = len(lines)
+    chunk_size = line_cnt // 47
+    chunks = [lines[i : i + chunk_size] for i in range(0, line_cnt, chunk_size)]
+    with ProcessPoolExecutor() as p:
+        if "test" in filename:
+            print("test data")
+            modified_lines = p.map(spellcheck_test_tweets, chunks)
+        else:
+            print("train data")
+            modified_lines = p.map(spellcheck_train_tweets, chunks)
+
+    output_lines = 0
+    with open(output_filename, "w") as output_file:
+        for chunk in modified_lines:
+            output_lines += len(chunk)
+            output_file.writelines(chunk)
+
+    print(
+        f"New file without combined preprocessing saved as {output_filename} (lines: {output_lines} / {line_cnt})"
+    )
+    assert output_lines == line_cnt
 
 
 def combined_preprocess(lines):
@@ -234,6 +343,13 @@ def combined_preprocess_test_data(lines):
 
 
 def gen_combined_preprocessed_file(filename):
+    """
+    combines the three successful preprocessing steps into one file.
+    - split words
+    - replace emojis
+    - spellcheck
+    """
+
     output_filename = filename.replace("_notabs.csv", "_combined.csv")
 
     with open(filename, "r") as input_file:
@@ -263,6 +379,10 @@ def gen_combined_preprocessed_file(filename):
 
 
 def replace_user_and_url(filename):
+    """
+    replaces <user> with @user and <url> with http
+    """
+
     output_filename = filename.replace("_combined.csv", "_combined2.csv")
 
     with open(filename, "r") as input_file:
@@ -276,25 +396,48 @@ def replace_user_and_url(filename):
             output_file.write(line)
 
 
+def main():
+    ### remove tabs ###
+    remove_tabs_dataset("../twitter-datasets/train_neg.txt")
+    remove_tabs_dataset("../twitter-datasets/train_pos.txt")
+    remove_tabs_dataset("../twitter-datasets/test_data.txt")
+
+    ### replace emojis ###
+    replace_emojis("../twitter-datasets/train_neg_notabs.csv")
+    replace_emojis("../twitter-datasets/train_pos_notabs.csv")
+    replace_emojis("../twitter-datasets/test_data_notabs.csv")
+
+    ### remove stopwords ###
+    remove_stop_words("../twitter-datasets/train_neg_notabs.csv")
+    remove_stop_words("../twitter-datasets/train_pos_notabs.csv")
+    remove_stop_words("../twitter-datasets/test_data_notabs.csv")
+
+    ### remove punctuation ###
+    remove_punctuation("../twitter-datasets/train_neg_notabs.csv")
+    remove_punctuation("../twitter-datasets/train_pos_notabs.csv")
+    remove_punctuation("../twitter-datasets/test_data_notabs.csv")
+
+    ### split hashtags ###
+    split_hashtags("../twitter-datasets/train_neg_notabs.csv")
+    split_hashtags("../twitter-datasets/train_pos_notabs.csv")
+    split_hashtags("../twitter-datasets/test_data_notabs.csv")
+
+    ### spellcheck ###
+    spellcheck("../twitter-datasets/train_neg_notabs.csv")
+    spellcheck("../twitter-datasets/train_pos_notabs.csv")
+    spellcheck("../twitter-datasets/test_data_notabs.csv")
+
+    ### combined preprocessing ###
+    # WARNING: this takes a long time to run
+    gen_combined_preprocessed_file("../twitter-datasets/train_neg_notabs.csv")
+    gen_combined_preprocessed_file("../twitter-datasets/train_pos_notabs.csv")
+    gen_combined_preprocessed_file("../twitter-datasets/test_data_notabs.csv")
+
+    ### replace user and url ###
+    replace_user_and_url("../twitter-datasets/train_neg_combined.csv")
+    replace_user_and_url("../twitter-datasets/train_pos_combined.csv")
+    replace_user_and_url("../twitter-datasets/test_data_combined.csv")
+
+
 if __name__ == "__main__":
-    # preprocess_file("../twitter-datasets/train_neg.txt")
-    # preprocess_file("../twitter-datasets/train_pos.txt")
-    # preprocess_file("../twitter-datasets/train_pos_full.txt")
-    # preprocess_file("../twitter-datasets/train_neg_full.txt")
-    # preprocess_file("../twitter-datasets/test_data.txt")
-
-    files = [
-        # "../twitter-datasets/train_neg_full_notabs.csv",
-        # "../twitter-datasets/train_pos_full_notabs.csv",
-        # "../twitter-datasets/test_data_notabs.csv",
-        "../twitter-datasets/train_neg_full_combined.csv",
-        "../twitter-datasets/train_pos_full_combined.csv",
-        "../twitter-datasets/test_data_combined.csv",
-    ]  # Update with your filenames
-
-    for filename in files:
-        # get_file_without_emoji(filename)
-        # remove_stop_words(filename)
-        # gen_files_without_punctuation(filename)
-        # gen_combined_preprocessed_file(filename)
-        replace_user_and_url(filename)
+    main()
