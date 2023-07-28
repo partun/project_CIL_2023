@@ -143,6 +143,8 @@ def load_dataset(dataset_type: str, frac=1, train_size=0.8):
             neg_path = "../twitter-datasets/train_neg_full_combined2.csv"
             pos_path = "../twitter-datasets/train_pos_full_combined2.csv"
             test_path = "../twitter-datasets/test_data_combined2.csv"
+        case "combined_cached":
+            return DatasetDict.load_from_disk("raw_dataset_combined_cache")
         case "irony":
             return load_dataset_irony(frac, train_size)
         case _:
@@ -223,6 +225,8 @@ def load_dataset(dataset_type: str, frac=1, train_size=0.8):
 
     dataset = dataset.with_format("torch")
     print("loaded dataset successfully!")
+
+    dataset.save_to_disk(f"raw_dataset_{dataset_type}_cache")
     print(dataset)
     return dataset
 

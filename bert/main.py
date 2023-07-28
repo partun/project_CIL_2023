@@ -224,7 +224,6 @@ def train_model(
     train_data,
     val_data,
     *,
-    store_model=False,
     store_path_tmpl=None,
 ):
     """
@@ -309,7 +308,7 @@ def train_model(
         acc = correct_cnt / cnt
         print(f"Epoch {epoch} validation accuracy: {acc:.3f}\n")
 
-        if store_model and store_path_tmpl is not None:
+        if store_path_tmpl is not None:
             save_model(model, store_path_tmpl.format(epoch))
 
         # if acc > best_acc:
@@ -464,12 +463,12 @@ def main():
         device="cuda" if cuda.is_available() else "cpu",
         train_batch_size=32,
         valid_batch_size=32,
-        epochs=4,
-        start_epoch=0,
+        epochs=6,
+        start_epoch=4,
         learning_rate=1e-05,
-        dataset_type="combined2",
-        force_reload_dataset=False,
-        weight_store_template="twitter_roberta_{}_epoch_combined2_1.pkl",
+        dataset_type="combined_cached",
+        force_reload_dataset=True,
+        weight_store_template="twitter_roberta_{}_epoch_combined2_2.pkl",
     )
 
     print(model_config)
@@ -492,7 +491,7 @@ def main():
     dataset = load_and_tokenize_dataset(
         model_config,
         frac=1,
-        train_size=0.90,
+        train_size=0.50,
         force_reload=model_config.force_reload_dataset,
     )
 
@@ -518,17 +517,16 @@ def main():
         pin_memory=True,
     )
 
-    load_model(model, "twitter_roberta_0_epoch_combined2_1.pkl")
+    # load_model(model, "twitter_roberta_3_epoch_combined2_2.pkl")
     # train_model(
     #     model,
     #     model_config,
     #     training_loader,
     #     validation_loader,
-    #     store_model=True,
     #     store_path_tmpl=model_config.weight_store_template,
     # )
 
-    observe_model(model, model_config)
+    # observe_model(model, model_config)
 
     # eval_model(model, model_config, training_loader, validation_loader)
 
@@ -541,7 +539,7 @@ def main():
     #     model,
     #     model_config,
     #     test_loader,
-    #     "twitter_roberta_1_epoch_combined2_results.csv",
+    #     "twitterEN2_roberta_1_epoch_combined2_results.csv",
     # )
 
 
