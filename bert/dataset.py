@@ -226,7 +226,6 @@ def load_dataset(dataset_type: str, frac=1, train_size=0.8):
     dataset = dataset.with_format("torch")
     print("loaded dataset successfully!")
 
-    dataset.save_to_disk(f"raw_dataset_{dataset_type}_cache")
     print(dataset)
     return dataset
 
