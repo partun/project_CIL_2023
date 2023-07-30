@@ -440,6 +440,45 @@ def generate_predictions(model, model_config: ModelConfig, test_data, output_fil
     print(f"generated predictions ({output_file=})")
 
 
+def generate_val_predictions(model, model_config: ModelConfig, val_data, output_file):
+    """
+    Generate predictions for test data that can be submitted to Kaggle
+    """
+    model.eval()
+    device = model_config.device
+
+    output = pd.DataFrame(columns=["Prediction", "Label", "Tweet"])
+
+    with torch.no_grad():
+        for batch in tqdm(val_data, desc="Generating validation predictions"):
+            labels = batch["label"].reshape(-1, 1)
+            tweets = batch["tweet"]
+            y_pred = model(
+                batch["input_ids"].to(device, dtype=torch.long),
+                batch["attention_mask"].to(device, dtype=torch.long),
+                batch["token_type_ids"].to(device, dtype=torch.long),
+            ).round()
+
+            # move tensors to cpu
+            labels = labels.cpu()
+            y_pred = y_pred.cpu()
+
+            df = pd.DataFrame(
+                {
+                    "Prediction": y_pred.squeeze(),
+                    "Label": labels.squeeze(),
+                    "Tweet": tweets,
+                }
+            )
+            df["Prediction"] = df["Prediction"].apply(lambda x: 1 if x == 1 else -1)
+            df["Label"] = df["Label"].apply(lambda x: 1 if x == 1 else -1)
+
+            output = pd.concat([output, df])
+
+    output.to_csv(output_file, index=False, sep="\t", header=True)
+    print(f"generated validation predictions ({output_file=})")
+
+
 def save_model(model, path):
     """
     Save the model to the given path
@@ -457,18 +496,18 @@ def load_model(model, path):
 
 def main():
     model_config = ModelConfig(
-        tokenizer_model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+        tokenizer_model="cardiffnlp/roberta-base-emoji",
         max_length=45,
-        nn_model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+        nn_model="cardiffnlp/roberta-base-emoji",
         device="cuda" if cuda.is_available() else "cpu",
         train_batch_size=32,
         valid_batch_size=32,
-        epochs=6,
-        start_epoch=4,
+        epochs=4,
+        start_epoch=0,
         learning_rate=1e-05,
         dataset_type="combined_cached",
         force_reload_dataset=True,
-        weight_store_template="twitter_roberta_{}_epoch_combined2_2.pkl",
+        weight_store_template="emoji_roberta_{}_epoch_combined_final.pkl",
     )
 
     print(model_config)
@@ -493,6 +532,7 @@ def main():
         frac=1,
         train_size=0.50,
         force_reload=model_config.force_reload_dataset,
+        include_tweet=True,
     )
 
     training_loader = DataLoader(
@@ -517,7 +557,38 @@ def main():
         pin_memory=True,
     )
 
-    # load_model(model, "twitter_roberta_3_epoch_combined2_2.pkl")
+    load_model(model, "final/emoji_roberta_0_epoch_combined_final.pkl")
+    generate_val_predictions(
+        model,
+        model_config,
+        validation_loader,
+        "val_results/emoji_roberta_0_epoch_validation_results.csv",
+    )
+
+    load_model(model, "final/emoji_roberta_1_epoch_combined_final.pkl")
+    generate_val_predictions(
+        model,
+        model_config,
+        validation_loader,
+        "val_results/emoji_roberta_1_epoch_validation_results.csv",
+    )
+
+    load_model(model, "final/emoji_roberta_2_epoch_combined_final.pkl")
+    generate_val_predictions(
+        model,
+        model_config,
+        validation_loader,
+        "val_results/emoji_roberta_2_epoch_validation_results.csv",
+    )
+
+    load_model(model, "final/emoji_roberta_3_epoch_combined_final.pkl")
+    generate_val_predictions(
+        model,
+        model_config,
+        validation_loader,
+        "val_results/emoji_roberta_3_epoch_validation_results.csv",
+    )
+
     # train_model(
     #     model,
     #     model_config,

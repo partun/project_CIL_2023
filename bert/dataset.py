@@ -300,7 +300,9 @@ def tokenize_dataset(dataset, model_config, *, include_tweet=False):
     return encoded_dataset
 
 
-def load_and_tokenize_dataset(model_config, frac=1, train_size=0.8, force_reload=False):
+def load_and_tokenize_dataset(
+    model_config, frac=1, train_size=0.8, force_reload=False, include_tweet=False
+):
     cache_path = f"dataset_{model_config.dataset_type}_{model_config.tokenizer_model.replace('/', '_')}_cache"
 
     if not force_reload and os.path.exists(cache_path):
