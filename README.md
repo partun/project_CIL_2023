@@ -106,8 +106,6 @@ This will first load and tokenize the data, then train the model and finally eva
 It will also generate a submission.csv file in the format required by Kaggle.
 
 
-
-
 ### XLNet or RoBerTa using hidden layer embeddings
 Navigate to the bert directory and run the tweet_embeddings.py file with chosen arguments and evaluate 4 different methods of using hidden layers to generate tweet embeddings on either XLNet or RoBERTa model.
 ```
@@ -125,7 +123,8 @@ python tweet_embeddings.py model_type combine_type
 
 
 ## 6. Ensemble Predictions
-We place all the prediction CSV files generated from different models into a folder named 'val_results/'. It will perform ensemble prediction and generate an ensemble_predictions.csv on the validation dataset.
+
+We place all the submission CSV files generated from different models into a folder named 'test_results/'. It will perform ensemble prediction and generate an ensemble_predictions.csv file that can be used as e combined submission file on Kaggle.
 
 ```
 python ensemble_prediction.py
