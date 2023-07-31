@@ -1,9 +1,15 @@
+"""
+This file is used training the XLNet and RoBERTa model with different tweet embedddings generation methods
+
+"""
+
 from dataset import (
     load_dataset,
     tokenize_dataset,
     load_and_tokenize_dataset,
     get_obervation_dataset,
 )
+import sys
 import transformers
 from transformers import RobertaModel, AutoModelForSequenceClassification
 import torch
@@ -40,7 +46,6 @@ class ModelConfig(NamedTuple):
         for k, v in zip(self._fields, self):
             out += f"- {k:<16} = {v}\n"
         return out
-
 
 # XLNet, last hidden layer + dense 
 class XLNetClass_l1(torch.nn.Module):
@@ -655,10 +660,23 @@ def load_model(model, path):
 
 def main():
    
-    """
-    XLNetClass_l1() (XLNet using last hidden layer) is used in final ensemble method for Kaggle submission
-    """
-    model_config = ModelConfig(
+ 
+    # total arguments
+    num_arg = len(sys.argv)
+    print("Total arguments passed:", num_arg)
+    if num_arg != 3:
+        print("Invalid arguments. Should be python xlnet_roberta.py model_type combine_type")
+        return
+    
+    model_type = sys.argv[1]
+    combine_type = sys.argv[2]
+
+    model_config = None
+    model = None
+
+    if model_type == "xlnet":
+        
+        model_config = ModelConfig(
             tokenizer_model="xlnet-base-cased",
             max_length=45,
             nn_model="Ibrahim-Alam/finetuning-xlnet-base-cased-on-tweet_sentiment_binary",
@@ -669,10 +687,51 @@ def main():
             start_epoch=0,
             learning_rate=1e-05,
             dataset_type="combined",
-            force_reload_dataset=True,
-    )
+            force_reload_dataset=False,
+        )
+        
+        if combine_type == "l1":
+            model = XLNetClass_l1()
+        elif combine_type == "wl4":
+            model = XLNetClass_wl4()
+        elif combine_type == "l4cnn":
+            model = XLNetClass_l4_cnn()
+        elif combine_type == "l8cnn":
+            model = XLNetClass_l8_cnn()
+        else:
+            print("Invalid combine type. Should be l1, wl4, l4cnn, or l8cnn")
+            return
+        
+    elif model_type == 'roberta':
 
-    model = XLNetClass_l1()
+        model_config = ModelConfig(
+            tokenizer_model="roberta-base",
+            max_length=45,
+            nn_model="roberta-base",
+            device="cuda" if cuda.is_available() else "cpu",
+            train_batch_size=32,
+            valid_batch_size=32,
+            epochs=4,
+            start_epoch=0,
+            learning_rate=1e-05,
+            dataset_type="combined",
+            force_reload_dataset=False,
+        )
+    
+        if combine_type == "l1":
+            model = RoBERTaClass_l1()
+        elif combine_type == "wl4":
+            model = RoBERTaClass_wl4()
+        elif combine_type == "l4cnn":
+            model = RoBERTaClass_l4_cnn()
+        elif combine_type == "l8cnn":
+            model = RoBERTaClass_l8_cnn()
+        else:
+            print("Invalid combine type. Should be l1, wl4, l4cnn, or l8cnn")
+            return
+    else:
+        print("Invalid model type. Should be xlnet or roberta.")
+        return
     
     print(model_config)
     model.to(model_config.device)
@@ -706,13 +765,11 @@ def main():
         pin_memory=True,
     )
 
-
-    
     train_model(model, model_config, training_loader, validation_loader)
     eval_model(model, model_config, training_loader, validation_loader)
-    save_model(model, "XLNet_l1_epoch_4.pkl" )
-    generate_predictions(model, "XLNet_l1_epoch_4_test_prediction_resuls.csv")
-
+    save_model(model, model_type + "_" + combine_type + "_4_epoch.pkl" )
+    generate_predictions(model, model_type + "_" + combine_type + "_4_epoch_test_results.csv")
+    generate_val_predictions(model, model_type + "_" + combine_type + "_4_epoch_validation_results.csv")
 
             
 if __name__ == "__main__":
