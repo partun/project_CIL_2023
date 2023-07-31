@@ -11,3 +11,5 @@ chardet
 datasets
 autocorrect
 pywordsegment
+seaborn
+tensorflow
