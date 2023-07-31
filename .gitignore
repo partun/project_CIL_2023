@@ -23,4 +23,7 @@ bert/dataset_nopunctuation_cache
 bert/bert_mini_3_epoch_full_results.csv
 bert/dataset_combined_roberta-base_cache
 bert/*_cache
-!bert/raw_dataset_combined_cache
+bert/*_results.csv
+bert/incorrect.csv
+bert/correct.csv
+*.pdf

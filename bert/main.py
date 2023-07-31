@@ -1,3 +1,14 @@
+"""
+This script can run the following transformers models:
+
+- BERT mini
+- RoBERTa base
+- Emoji RoBERTa
+- Twitter RoBERTa
+- Twitter RoBERTa EN
+
+You can specify which model to run by changing the `model_config` variable in the main function.
+"""
 from dataset import (
     load_dataset,
     tokenize_dataset,
@@ -20,7 +31,6 @@ import pandas as pd
 np.random.seed(423)
 torch.backends.cudnn.benchmark = True
 
-
 class ModelConfig(NamedTuple):
     tokenizer_model: str
     max_length: int
@@ -40,6 +50,83 @@ class ModelConfig(NamedTuple):
         for k, v in zip(self._fields, self):
             out += f"- {k:<20} = {v}\n"
         return out
+
+
+BERT_MINI = ModelConfig(
+    tokenizer_model="prajjwal1/bert-mini",
+    max_length=45,
+    nn_model="prajjwal1/bert-mini",
+    device="cuda" if cuda.is_available() else "cpu",
+    train_batch_size=32,
+    valid_batch_size=32,
+    epochs=3,
+    start_epoch=0,
+    learning_rate=1e-05,
+    dataset_type="combined",
+    force_reload_dataset=True,
+    weight_store_template="mini_bert_{}_epoch_combined_final.pkl",
+)
+
+ROBERTA_BASE = ModelConfig(
+    tokenizer_model="roberta-base",
+    max_length=45,
+    nn_model="roberta-base",
+    device="cuda" if cuda.is_available() else "cpu",
+    train_batch_size=32,
+    valid_batch_size=32,
+    epochs=3,
+    start_epoch=0,
+    learning_rate=1e-05,
+    dataset_type="combined",
+    force_reload_dataset=True,
+    weight_store_template="base_roberta_{}_epoch_combined.pkl",
+)
+
+EMOJI_ROBERTA = ModelConfig(
+    tokenizer_model="cardiffnlp/roberta-base-emoji",
+    max_length=45,
+    nn_model="cardiffnlp/roberta-base-emoji",
+    device="cuda" if cuda.is_available() else "cpu",
+    train_batch_size=32,
+    valid_batch_size=32,
+    epochs=3,
+    start_epoch=0,
+    learning_rate=1e-05,
+    dataset_type="combined",
+    force_reload_dataset=True,
+    weight_store_template="emoji_roberta_{}_epoch_combined.pkl",
+)
+
+TWITTER_ROBERTA = ModelConfig(
+        tokenizer_model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+        max_length=45,
+        nn_model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+        device="cuda" if cuda.is_available() else "cpu",
+        train_batch_size=32,
+        valid_batch_size=32,
+        epochs=3,
+        start_epoch=0,
+        learning_rate=1e-05,
+        dataset_type="combined",
+        force_reload_dataset=True,
+        weight_store_template="twitter_roberta_{}_epoch_combined.pkl",
+    )
+
+TWITTER_ROBERTA_EN = ModelConfig(
+    tokenizer_model="cardiffnlp/roberta-base-tweet-sentiment-en",
+        max_length=45,
+        nn_model="cardiffnlp/roberta-base-tweet-sentiment-en",
+        device="cuda" if cuda.is_available() else "cpu",
+        train_batch_size=32,
+        valid_batch_size=32,
+        epochs=3,
+        start_epoch=0,
+        learning_rate=1e-05,
+        dataset_type="combined",
+        force_reload_dataset=True,
+        weight_store_template="twitter_en_roberta_{}_epoch_combined.pkl",
+    )
+
 
 
 class BERTClass(torch.nn.Module):
@@ -217,10 +304,13 @@ class RoBERTaIrony(torch.nn.Module):
         # output = self.l4(output)
         # return output
 
+
 class RoBERTaXLM(torch.nn.Module):
     def __init__(self):
         super(RoBERTaXLM, self).__init__()
-        self.l1 = RobertaModel.from_pretrained("cardiffnlp/twitter-xlm-roberta-base-sentiment", return_dict=False)
+        self.l1 = RobertaModel.from_pretrained(
+            "cardiffnlp/twitter-xlm-roberta-base-sentiment", return_dict=False
+        )
 
         self.l2 = torch.nn.Dropout(0.3)
         self.l3 = torch.nn.Linear(768, 1)
@@ -232,6 +322,7 @@ class RoBERTaXLM(torch.nn.Module):
         output = self.l3(output)
         output = self.l4(output)
         return output
+
 
 def train_model(
     model,
@@ -510,23 +601,14 @@ def load_model(model, path):
 
 
 def main():
-    model_config = ModelConfig(
-        tokenizer_model="cardiffnlp/roberta-base-emoji",
-        max_length=45,
-        nn_model="cardiffnlp/roberta-base-emoji",
-        device="cuda" if cuda.is_available() else "cpu",
-        train_batch_size=32,
-        valid_batch_size=32,
-        epochs=4,
-        start_epoch=0,
-        learning_rate=1e-05,
-        dataset_type="combined_cached",
-        force_reload_dataset=True,
-        weight_store_template="emoji_roberta_{}_epoch_combined_final.pkl",
-    )
-
+    # choose the model you want to use here
+    # model_config = BERT_MINI
+    # model_config = ROBERTA_BASE
+    # model_config = EMOJI_ROBERTA
+    model_config = TWITTER_ROBERTA
+    # model_config = TWITTER_ROBERTA_EN
+    
     print(model_config)
-
     match model_config.nn_model:
         case "cardiffnlp/roberta-base-tweet-sentiment-en":
             model = RoBERTaTwitterEN()
@@ -544,6 +626,7 @@ def main():
             model = BERTClass(model=model_config.nn_model)
     model.to(model_config.device)
 
+    # load the dataset
     dataset = load_and_tokenize_dataset(
         model_config,
         frac=1,
@@ -551,7 +634,6 @@ def main():
         force_reload=model_config.force_reload_dataset,
         include_tweet=True,
     )
-
     training_loader = DataLoader(
         dataset["train"],
         batch_size=model_config.train_batch_size,
@@ -574,61 +656,22 @@ def main():
         pin_memory=True,
     )
 
-    load_model(model, "final/emoji_roberta_0_epoch_combined_final.pkl")
-    generate_val_predictions(
+    # train the model   
+    # load_model(model, "twitter_roberta_2_epoch_combined.pkl")
+    train_model(
         model,
         model_config,
+        training_loader,
         validation_loader,
-        "val_results/emoji_roberta_0_epoch_validation_results.csv",
+        store_path_tmpl=model_config.weight_store_template,
     )
 
-    load_model(model, "final/emoji_roberta_1_epoch_combined_final.pkl")
-    generate_val_predictions(
+    generate_predictions(
         model,
         model_config,
-        validation_loader,
-        "val_results/emoji_roberta_1_epoch_validation_results.csv",
+        test_loader,
+        "results.csv",
     )
-
-    load_model(model, "final/emoji_roberta_2_epoch_combined_final.pkl")
-    generate_val_predictions(
-        model,
-        model_config,
-        validation_loader,
-        "val_results/emoji_roberta_2_epoch_validation_results.csv",
-    )
-
-    load_model(model, "final/emoji_roberta_3_epoch_combined_final.pkl")
-    generate_val_predictions(
-        model,
-        model_config,
-        validation_loader,
-        "val_results/emoji_roberta_3_epoch_validation_results.csv",
-    )
-
-    # train_model(
-    #     model,
-    #     model_config,
-    #     training_loader,
-    #     validation_loader,
-    #     store_path_tmpl=model_config.weight_store_template,
-    # )
-
-    # observe_model(model, model_config)
-
-    # eval_model(model, model_config, training_loader, validation_loader)
-
-    # train_model(model, model_config, training_loader, validation_loader)
-    # save_model(model, "bert_mini_4_epoch_combined_8.pkl")
-
-    # eval_model(model, model_config, training_loader, validation_loader)
-
-    # generate_predictions(
-    #     model,
-    #     model_config,
-    #     test_loader,
-    #     "twitterEN2_roberta_1_epoch_combined2_results.csv",
-    # )
 
 
 if __name__ == "__main__":
