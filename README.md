@@ -1,11 +1,11 @@
 # Computational Intelligence Lab Project SS2023
-## 1. Downlaod Twitter Datasets
+## 1. Download Twitter Datasets
 Download the tweet datasets from here:
 http://www.da.inf.ethz.ch/teaching/2018/CIL/material/exercise/twitter-datasets.zip
 
 The dataset should have the following files:
 - sample_submission.csv
-- train_neg.txt :  a subset of negative training samples
+- train_neg.txt: a subset of negative training samples
 - train_pos.txt: a subset of positive training samples
 - test_data.txt:
 - train_neg_full.txt: the full negative training samples
@@ -110,7 +110,7 @@ python tweet_embeddings.py model_type combine_type
 
 #### combine type
 - l1: only use the last hidden layer to generate tweet embeddings
-- wl4: weighted average the last 4 hidden layers to generae tweet embeddings
+- wl4: weighted average the last 4 hidden layers to generate tweet embeddings
 - l4cnn: use last 4 hidden layers with cnn to generate tweet embeddings
 - l8cnn: use both the last 4 and intermediate 4 hidden layers with cnn to generate tweet embeddings
 
