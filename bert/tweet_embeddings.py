@@ -1,5 +1,9 @@
-import dataset
-from dataset import load_dataset, tokenize_dataset, load_and_tokenize_dataset
+from dataset import (
+    load_dataset,
+    tokenize_dataset,
+    load_and_tokenize_dataset,
+    get_obervation_dataset,
+)
 import transformers
 from transformers import RobertaModel, AutoModelForSequenceClassification
 import torch
@@ -13,7 +17,7 @@ import pickle
 from pprint import pprint
 import pandas as pd
 
-np.random.seed(1)
+np.random.seed(423)
 
 VALIDATION_RESULTS = []
 TRAIN_RESULTS = []
@@ -26,6 +30,7 @@ class ModelConfig(NamedTuple):
     train_batch_size: int
     valid_batch_size: int
     epochs: int
+    start_epoch: int
     learning_rate: float
     dataset_type: str
     force_reload_dataset: bool
@@ -36,104 +41,6 @@ class ModelConfig(NamedTuple):
             out += f"- {k:<16} = {v}\n"
         return out
 
-
-class RoBERTaClass(torch.nn.Module):
-    def __init__(self):
-        super(RoBERTaClass, self).__init__()
-        self.l1 = RobertaModel.from_pretrained("roberta-base", return_dict=False)
-        self.l2 = torch.nn.Dropout(0.3)
-        self.l3 = torch.nn.Linear(768, 1)
-        self.l4 = torch.nn.Sigmoid()
-        self.layer_weights = torch.nn.Parameter(torch.tensor([1] * 4, dtype=torch.float))
-
-        self.conv1d = torch.nn.Conv1d(in_channels=768, out_channels=256, kernel_size=3, padding='valid', stride=1)
-        self.conv2d = torch.nn.Conv2d(in_channels=4, out_channels=256, kernel_size=(3, 768), stride=1)
-        self.conv2dm = torch.nn.Conv2d(in_channels=4, out_channels=256, kernel_size=(3, 768), stride=1)
-        self.relu = torch.nn.ReLU()
-        self.relum = torch.nn.ReLU()
-        self.maxpool1d = torch.nn.MaxPool1d(kernel_size=45-3+1)
-        self.maxpool2d = torch.nn.MaxPool2d(kernel_size=(43, 1)) # global max pooling
-        self.maxpool2dm = torch.nn.MaxPool2d(kernel_size=(43, 1)) # global max pooling
-
-    def forward(self, ids, mask, token_type_ids):
-        _, output = self.l1(ids, attention_mask=mask, token_type_ids=token_type_ids)
-        # output = self.weighted_average_last_four_layers(output)
-
-        """
-        last = self.cnn2d_last_four_layers(output)
-        last = self.conv2d(last)
-        # print("after_con2d: ", output.shape) # (32, 256, 43, 1) ?
-        last = self.relu(last)
-        # print("after relu: ", output.shape)
-        last = self.maxpool2d(last)
-        # print("after maxpool2d: ", output.shape)
-        last = last.squeeze(dim=3)
-        # print("after flatten: ", output.shape)
-        output = last.squeeze(dim=2)
-        # print("after flatten: ", output.shape) # (32, 256)
-        
-
-        # cnn 2d only last four
-        last = self.cnn2d_last_four_layers(output)
-        last = self.conv2d(last)
-        # print("after_con2d: ", output.shape) # (32, 256, 43, 1) ?
-        last = self.relu(last)
-        # print("after relu: ", output.shape)
-        last = self.maxpool2d(last)
-        # print("after maxpool2d: ", output.shape)
-        last = last.squeeze(dim=3)
-        # print("after flatten: ", output.shape)
-        last = last.squeeze(dim=2)
-        # print("after flatten: ", output.shape) # (32, 256)
-        
-
-        # cnn 2d only last four
-        mid = self.cnn2d_middle_four_layers(output)
-        mid = self.conv2dm(mid)
-        # print("after_con2d: ", output.shape) # (32, 256, 43, 1) ?
-        mid = self.relum(mid)
-        # print("after relu: ", output.shape)
-        mid = self.maxpool2dm(mid)
-        # print("after maxpool2d: ", output.shape)
-        mid = mid.squeeze(dim=3)
-        # print("after flatten: ", output.shape)
-        mid = mid.squeeze(dim=2)
-        # print("after flatten: ", output.shape) # (32, 256)
-        
-
-        # concate
-        output = torch.cat((mid, last), dim=1)
-        # print("concate_shape", output.shape)
-        """
-
-
-        output = self.l2(output)
-        output = self.l3(output)
-        output = self.l4(output)
-        return output
-
-    def weighted_average_last_four_layers(self, output):
-        # print("layers shape", len(output[2]))
-        hidden_states = output[2]
-        last_four = torch.stack(hidden_states)[8:12, :, :, :] # (4 * 16 * 45 * 768)
-        weight_factor = self.layer_weights.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).expand(last_four.size())
-        weighted_average = (weight_factor * last_four).sum(dim=0) / self.layer_weights.sum()
-        sentence_last_four = torch.mean(weighted_average, 1)
-        return sentence_last_four
-
-    def cnn2d_last_four_layers(self, output):
-        hidden_states = output[2]
-        last_four = torch.stack(hidden_states)[8:12, :, :, :] # (4 * 16 * 45 * 768)
-        last_four = last_four.permute(1, 0, 2, 3)
-        # print("last_four: ", last_four.shape) # (32, 4, 45 ,768)
-        return last_four
-
-    def cnn2d_middle_four_layers(self, output):
-        hidden_states = output[2]
-        middle_four = torch.stack(hidden_states)[4:8, :, :, :] # (4 * 16 * 45 * 768)
-        middle_four = middle_four.permute(1, 0, 2, 3)
-        # print("middle_four: ", middle_four.shape) # (32, 4, 45 ,768)
-        return middle_four
 
 # XLNet, last hidden layer + dense 
 class XLNetClass_l1(torch.nn.Module):
@@ -460,10 +367,45 @@ class RoBERTaClass_l8_cnn(torch.nn.Module):
         # print("cat_last_four", cat_last_four.shape) # (32, 3072)
         return cat_last_four
    
-def train_model(model, model_config: ModelConfig, train_data, val_data):
+class RoBERTaTwitterEN(torch.nn.Module):
+    def __init__(self):
+        print("using RoBERTaTwitterEN")
+        super(RoBERTaTwitterEN, self).__init__()
+        self.l1 = AutoModelForSequenceClassification.from_pretrained(
+            "cardiffnlp/roberta-base-tweet-sentiment-en",
+            output_hidden_states=True,
+            return_dict=True,
+        )
+
+        # self.l2 = torch.nn.Linear(3, 3)
+        # self.l3 = torch.nn.RReLU()
+        self.l4 = torch.nn.Linear(3, 1)
+        self.l5 = torch.nn.Sigmoid()
+
+    def forward(self, ids, mask, token_type_ids):
+        output = self.l1(ids, attention_mask=mask, token_type_ids=token_type_ids)
+
+        # output = self.l2(output[0])
+        # output = self.l3(output)
+        output = self.l4(output[0])
+        output = self.l5(output)
+        return output
+
+def train_model(
+    model,
+    model_config: ModelConfig,
+    train_data,
+    val_data,
+    *,
+    store_path_tmpl=None,
+):
     """
     Train the model
     """
+
+    print(
+        f"Training model for {model_config.epochs} epochs starting at {model_config.start_epoch}"
+    )
 
     loss_fn = torch.nn.BCELoss()  # binary cross entropy
     optimizer = torch.optim.Adam(model.parameters(), lr=model_config.learning_rate)
@@ -473,31 +415,29 @@ def train_model(model, model_config: ModelConfig, train_data, val_data):
     best_acc = -np.inf  # init to negative infinity
     best_weights = None
 
-    for epoch in range(model_config.epochs):
+    for epoch in range(model_config.start_epoch, model_config.epochs):
         model.train()
         with tqdm(
             train_data,
             unit="batch",
-            mininterval=0,
-            miniters=200,
+            # mininterval=5,
+            # maxinterval=10,
+            miniters=50,
         ) as bar:
             bar.set_description(f"Epoch {epoch}")
 
             correct_cnt = 0
             cnt = 0
             for i, batch in enumerate(bar):
-                # take a batch
-
                 # forward pass
                 y_batch = batch["label"].to(device, dtype=torch.float32).reshape(-1, 1)
                 y_pred = model(
                     batch["input_ids"].to(device, dtype=torch.long),
                     batch["attention_mask"].to(device, dtype=torch.long),
                     batch["token_type_ids"].to(device, dtype=torch.long),
+                    # batch["irony"].to(device, dtype=torch.float32),
                 )
                 loss = loss_fn(y_pred, y_batch)
-                cnt += len(y_batch)
-                correct_cnt += int((y_pred.round() == y_batch).int().sum())
 
                 # backward pass
                 optimizer.zero_grad()
@@ -506,16 +446,19 @@ def train_model(model, model_config: ModelConfig, train_data, val_data):
                 optimizer.step()
                 # print progress
 
-                if i % 200 == 0:
+                cnt += len(y_batch)
+                correct_cnt += int((y_pred.round() == y_batch).int().sum())
+
+                if i % 50 == 0:
                     acc = (y_pred.round() == y_batch).float().mean()
                     bar.set_postfix(
-                        loss=f"{float(loss):.4f}",
-                        acc=f"{float(acc):.4f}",
-                        total_acc=f"{correct_cnt/cnt:.4f}",
+                        loss=f"{float(loss):.3f}",
+                        acc=f"{float(acc):.3f}",
+                        total_acc=f"{correct_cnt/cnt:.3f}",
                     )
 
             acc = correct_cnt / cnt
-            print(f"Epoch {epoch} training accuracy: {acc:.4f}")
+            print(f"Epoch {epoch} training accuracy: {acc:.3f}")
 
         # evaluate accuracy at end of each epoch
         model.eval()
@@ -530,19 +473,23 @@ def train_model(model, model_config: ModelConfig, train_data, val_data):
                     val_batch["input_ids"].to(device, dtype=torch.long),
                     val_batch["attention_mask"].to(device, dtype=torch.long),
                     val_batch["token_type_ids"].to(device, dtype=torch.long),
+                    # batch["irony"].to(device, dtype=torch.float32),
                 )
                 cnt += len(y_val)
                 correct_cnt += int((y_pred.round() == y_val).int().sum())
 
         acc = correct_cnt / cnt
-        print(f"Epoch {epoch} validation accuracy: {acc:.4f}")
-        VALIDATION_RESULTS.append(acc)
-        if acc > best_acc:
-            best_acc = acc
-            best_weights = copy.deepcopy(model.state_dict())
+        print(f"Epoch {epoch} validation accuracy: {acc:.3f}\n")
+
+        if store_path_tmpl is not None:
+            save_model(model, store_path_tmpl.format(epoch))
+
+        # if acc > best_acc:
+        #     best_acc = acc
+        #     best_weights = copy.deepcopy(model.state_dict())
 
     # restore model and return best accuracy
-    model.load_state_dict(best_weights)
+    # model.load_state_dict(best_weights)
     return best_acc
 
 def eval_model(model, model_config: ModelConfig, train_data, val_data):
@@ -553,7 +500,6 @@ def eval_model(model, model_config: ModelConfig, train_data, val_data):
     device = model_config.device
     model.eval()
     with torch.no_grad():
-        
         correct_cnt = 0
         cnt = 0
         for batch in tqdm(val_data):
@@ -567,9 +513,8 @@ def eval_model(model, model_config: ModelConfig, train_data, val_data):
             correct_cnt += int((y_pred.round() == y).int().sum())
 
         acc = correct_cnt / cnt
-        print(f"validation accuracy: {acc:.4f}")
-        VALIDATION_RESULTS.append(acc)
-        
+        print(f"validation accuracy: {acc:.3f}")
+
         correct_cnt = 0
         cnt = 0
         for batch in tqdm(train_data):
@@ -583,8 +528,56 @@ def eval_model(model, model_config: ModelConfig, train_data, val_data):
             correct_cnt += int((y_pred.round() == y).int().sum())
 
         acc = correct_cnt / cnt
-        print(f"training accuracy: {acc:.4f}")
-        TRAIN_RESULTS.append(acc)
+        print(f"training accuracy: {acc:.3f}")
+
+def observe_model(model, model_config: ModelConfig):
+    dataset = get_obervation_dataset(model_config, frac=1, train_size=0.85)
+
+    validation_loader = DataLoader(
+        dataset["validation"],
+        batch_size=model_config.valid_batch_size,
+        shuffle=False,
+        num_workers=0,
+    )
+
+    correct_output_file = "correct.csv"
+    incorrect_output_file = "incorrect.csv"
+
+    correct_file = open(correct_output_file, "w")
+    incorrect_file = open(incorrect_output_file, "w")
+    model.eval()
+    device = model_config.device
+    with torch.no_grad():
+        correct_cnt = 0
+        cnt = 0
+        for val_batch in tqdm(validation_loader, desc="Validation"):
+            y_val = val_batch["label"].to(device, dtype=torch.float32).reshape(-1, 1)
+            y_pred = model(
+                val_batch["input_ids"].to(device, dtype=torch.long),
+                val_batch["attention_mask"].to(device, dtype=torch.long),
+                val_batch["token_type_ids"].to(device, dtype=torch.long),
+            )
+            cnt += len(y_val)
+            correct = (y_pred.round() == y_val).int().cpu()
+            correct_cnt += int((y_pred.round() == y_val).int().sum())
+
+            for i, c in enumerate(correct):
+                if c == 1:
+                    print(
+                        f"{int(val_batch['label'][i])}: {val_batch['tweet'][i]}",
+                        file=correct_file,
+                    )
+                elif c == 0:
+                    print(
+                        f"{int(val_batch['label'][i])}: {val_batch['tweet'][i]}",
+                        file=incorrect_file,
+                    )
+                else:
+                    raise ValueError("incorrect value for correct")
+
+        print(f"correct: {correct_cnt/cnt:.3f}")
+        correct_file.close()
+        incorrect_file.close()
 
 def generate_predictions(model, model_config: ModelConfig, test_data, output_file):
     """
@@ -616,6 +609,44 @@ def generate_predictions(model, model_config: ModelConfig, test_data, output_fil
     output.to_csv(output_file, index=False, sep=",", header=True)
     print(f"generated predictions ({output_file=})")
 
+def generate_val_predictions(model, model_config: ModelConfig, val_data, output_file):
+    """
+    Generate predictions for test data that can be submitted to Kaggle
+    """
+    model.eval()
+    device = model_config.device
+
+    output = pd.DataFrame(columns=["Prediction", "Label", "Tweet"])
+
+    with torch.no_grad():
+        for batch in tqdm(val_data, desc="Generating validation predictions"):
+            labels = batch["label"].reshape(-1, 1)
+            tweets = batch["tweet"]
+            y_pred = model(
+                batch["input_ids"].to(device, dtype=torch.long),
+                batch["attention_mask"].to(device, dtype=torch.long),
+                batch["token_type_ids"].to(device, dtype=torch.long),
+            ).round()
+
+            # move tensors to cpu
+            labels = labels.cpu()
+            y_pred = y_pred.cpu()
+
+            df = pd.DataFrame(
+                {
+                    "Prediction": y_pred.squeeze(),
+                    "Label": labels.squeeze(),
+                    "Tweet": tweets,
+                }
+            )
+            df["Prediction"] = df["Prediction"].apply(lambda x: 1 if x == 1 else -1)
+            df["Label"] = df["Label"].apply(lambda x: 1 if x == 1 else -1)
+
+            output = pd.concat([output, df])
+
+    output.to_csv(output_file, index=False, sep="\t", header=True)
+    print(f"generated validation predictions ({output_file=})")
+
 def save_model(model, path):
     torch.save(model.state_dict(), path)
 
@@ -623,7 +654,9 @@ def load_model(model, path):
     model.load_state_dict(torch.load(path))
 
 def main():
-
+   
+    """
+    XLNetClass_l1() (XLNet using last hidden layer) is used in final ensemble method for Kaggle submission
     """
     model_config = ModelConfig(
             tokenizer_model="xlnet-base-cased",
@@ -632,53 +665,39 @@ def main():
             device="cuda" if cuda.is_available() else "cpu",
             train_batch_size=32,
             valid_batch_size=32,
-            epochs=3,
+            epochs=4,
+            start_epoch=0,
             learning_rate=1e-05,
             dataset_type="combined",
-            force_reload_dataset=False,
+            force_reload_dataset=True,
     )
 
-    model = XLNetClass_l8_cnn()
-    """
-
-    model_config = ModelConfig(
-            tokenizer_model="roberta-base",
-            max_length=45,
-            nn_model="roberta-base",
-            device="cuda" if cuda.is_available() else "cpu",
-            # device = "cpu",
-            train_batch_size=32,
-            valid_batch_size=32,
-            epochs=1,
-            learning_rate=1e-05,
-            dataset_type="combined",
-            force_reload_dataset=False,
-    )
-    model = RoBERTaClass_l8_cnn()
+    model = XLNetClass_l1()
     
-
+    print(model_config)
     model.to(model_config.device)
 
     dataset = load_and_tokenize_dataset(
         model_config,
         frac=1,
-        train_size=0.8,
-        force_reload=model_config.force_reload_dataset
+        train_size=0.50,
+        force_reload=model_config.force_reload_dataset,
+        include_tweet=True,
     )
-
     training_loader = DataLoader(
         dataset["train"],
         batch_size=model_config.train_batch_size,
         shuffle=True,
         num_workers=0,
+        pin_memory=True,
     )
     validation_loader = DataLoader(
         dataset["validation"],
         batch_size=model_config.valid_batch_size,
-        shuffle=True,
+        shuffle=False,
         num_workers=0,
+        pin_memory=True,
     )
-
     test_loader = DataLoader(
         dataset["test"],
         batch_size=model_config.valid_batch_size,
@@ -686,17 +705,15 @@ def main():
         num_workers=0,
         pin_memory=True,
     )
+
+
     
-    # load_model(model, "XLNet_Ibra_epoch_3_combined_entire_weighted4_32_e5_linear.pkl")
     train_model(model, model_config, training_loader, validation_loader)
     eval_model(model, model_config, training_loader, validation_loader)
-    generate_predictions(
-         model,
-         model_config,
-         test_loader,
-         "prediction.csv"
-    )
+    save_model(model, "XLNet_l1_epoch_4.pkl" )
+    generate_predictions(model, "XLNet_l1_epoch_4_test_prediction_resuls.csv")
 
 
+            
 if __name__ == "__main__":
     main()
