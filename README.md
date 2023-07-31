@@ -1,4 +1,4 @@
-# Computational Intelligence Lab Project FS2023
+# Computational Intelligence Lab Project SS2023
 ## 1. Downlaod Twitter Datasets
 Download the tweet datasets from here:
 http://www.da.inf.ethz.ch/teaching/2018/CIL/material/exercise/twitter-datasets.zip
