@@ -1,6 +1,8 @@
 """
-This file is used training the XLNet and RoBERTa model with different tweet embedddings generation methods
-
+This script is used to the XLNet and RoBERTa model with different tweet embedddings generation methods
+Run using command: python tweet_embeddings.py model_type combine_type
+model_type can be: xlnet, roberta
+combine_type can be: l1, wl4, l4cnn, l8cnn
 """
 
 from dataset import (
@@ -768,8 +770,13 @@ def main():
     train_model(model, model_config, training_loader, validation_loader)
     eval_model(model, model_config, training_loader, validation_loader)
     save_model(model, model_type + "_" + combine_type + "_4_epoch.pkl" )
-    generate_predictions(model, model_type + "_" + combine_type + "_4_epoch_test_results.csv")
-    generate_val_predictions(model, model_type + "_" + combine_type + "_4_epoch_validation_results.csv")
+    generate_predictions(
+        model,
+        model_config,
+        test_loader,
+        model_type + "_" + combine_type + "_4_epoch_test_results.csv",
+    )
+    
 
             
 if __name__ == "__main__":
