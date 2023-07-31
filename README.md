@@ -1,4 +1,4 @@
-## Twitter  Datasets
+## 1. Downlaod Twitter Datasets
 
 Download the tweet datasets from here:
 http://www.da.inf.ethz.ch/teaching/2018/CIL/material/exercise/twitter-datasets.zip
@@ -15,20 +15,21 @@ The dataset should have the following files:
 And place all these files in the twitter-datasets directory.
 
 
-## Install python requirements
+## 2. Install python requirements
 
 We used python 3.11.3 for this project. The required packages are listed in the requirements.txt file. To install them, run the following command:
 
 ``` 
 pip install -r requirements.txt
 ```
-### GloVe downloading
+
+## 3. GloVe downloading
 
 We used the standford GloVe for some of the baseline models. The corresponding pre-trained GloVe embeddings can be downloaded using this link:
 https://nlp.stanford.edu/data/glove.6B.zip
 The downloaded file should be put into the twitter-datasets directory.
 
-### preprocessing of the dataset
+## 4. Preprocessing of the Dataset
 
 Navigate to the preprocessing directory and run the preprocessing.py file.
 This will generate multiple preprocessed csv files in the twitter-datasets directory.
@@ -37,16 +38,77 @@ This will generate multiple preprocessed csv files in the twitter-datasets direc
 python preprocessing.py
 ```
 
-### Training the model
+## 5. Training the Models
 
-Navigate to the bert directory and run the main.py file.
+
+### Logistic Regression
+
+Navigate to the baseline directory and run the logistic_regression.py file.
+
+```
+cd baseline
+python logistic_regression.py
+```
+
+
+### LSTM
+
+Navigate to the baseline directory and run the lstm.py file.
+
+```
+cd baseline
+python lstm.py
+```
+
+### GloVe + CNN
+
+Navigate to the baseline directory and run the glove_cnn.py file.
+
+```
+cd baseline
+python GloVe_cnn.py
+```
+
+### BERT-mini
+
+Navigate to the transformers directory and set the model_config variable in main function of the main.py file to BERT_MINI. Then run the main.py file.
+
 This will first load and tokenize the data, then train the model and finally evaluate the model on the test data.
 It will also generate a submission.csv file in the format required by Kaggle.
 
-```
-python main.py
-```
+### RoBERTa Base
 
+Navigate to the transformers directory and set the model_config variable in main function of the main.py file to ROBERTA_BASE. Then run the main.py file.
+
+This will first load and tokenize the data, then train the model and finally evaluate the model on the test data.
+It will also generate a submission.csv file in the format required by Kaggle.
+
+### Twitter RoBERTa
+
+Navigate to the transformers directory and set the model_config variable in main function of the main.py file to TWITTER_ROBERTA. Then run the main.py file.
+
+This will first load and tokenize the data, then train the model and finally evaluate the model on the test data.
+It will also generate a submission.csv file in the format required by Kaggle.
+
+
+### RoBERTa TweetEN
+
+Navigate to the transformers directory and set the model_config variable in main function of the main.py file to TWITTER_ROBERTA_EN. Then run the main.py file.
+
+This will first load and tokenize the data, then train the model and finally evaluate the model on the test data.
+It will also generate a submission.csv file in the format required by Kaggle.
+
+### Emoji RoBERTa
+
+Navigate to the transformers directory and set the model_config variable in main function of the main.py file to EMOJI_ROBERTA. Then run the main.py file.
+
+This will first load and tokenize the data, then train the model and finally evaluate the model on the test data.
+It will also generate a submission.csv file in the format required by Kaggle.
+
+
+
+
+### XLNet or RoBerTa using hidden layer embeddings
 Navigate to the bert directory and run the tweet_embeddings.py file with chosen arguments and evaluate 4 different methods of using hidden layers to generate tweet embeddings on either XLNet or RoBERTa model.
 ```
 python tweet_embeddings.py model_type combine_type
@@ -61,7 +123,8 @@ python tweet_embeddings.py model_type combine_type
 - l4cnn: use last 4 hidden layers with cnn to generate tweet embeddings
 - l8cnn: use both the last 4 and intermediate 4 hidden layers with cnn to generate tweet embeddings
 
-### Ensemble Mehthod
+
+## 6. Ensemble Predictions
 We place all the prediction CSV files generated from different models into a folder named 'val_results/'. It will perform ensemble prediction and generate an ensemble_predictions.csv on the validation dataset.
 
 ```
