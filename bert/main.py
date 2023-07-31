@@ -217,6 +217,21 @@ class RoBERTaIrony(torch.nn.Module):
         # output = self.l4(output)
         # return output
 
+class RoBERTaXLM(torch.nn.Module):
+    def __init__(self):
+        super(RoBERTaXLM, self).__init__()
+        self.l1 = RobertaModel.from_pretrained("cardiffnlp/twitter-xlm-roberta-base-sentiment", return_dict=False)
+
+        self.l2 = torch.nn.Dropout(0.3)
+        self.l3 = torch.nn.Linear(768, 1)
+        self.l4 = torch.nn.Sigmoid()
+
+    def forward(self, ids, mask, token_type_ids):
+        _, output = self.l1(ids, attention_mask=mask, token_type_ids=token_type_ids)
+        output = self.l2(output)
+        output = self.l3(output)
+        output = self.l4(output)
+        return output
 
 def train_model(
     model,
@@ -521,6 +536,8 @@ def main():
             model = RoBERTaIrony()
         case "cardiffnlp/twitter-roberta-base-sentiment-latest":
             model = RoBERTaTwitter()
+        case "cardiffnlp/twitter-xlm-roberta-base-sentiment":
+            model = RoBERTaXLM()
         case "roberta-base":
             model = RoBERTaClass()
         case _:  # bert
