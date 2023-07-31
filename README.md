@@ -22,7 +22,11 @@ We used python 3.11.3 for this project. The required packages are listed in the 
 ``` 
 pip install -r requirements.txt
 ```
+### GloVe downloading
 
+We used the standford GloVe for some of the baseline models. The corresponding pre-trained GloVe embeddings can be downloaded using this link:
+https://nlp.stanford.edu/data/glove.6B.zip
+The downloaded file should be put into the twitter-datasets directory.
 
 ### preprocessing of the dataset
 
