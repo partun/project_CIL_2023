@@ -630,7 +630,7 @@ def main():
     dataset = load_and_tokenize_dataset(
         model_config,
         frac=1,
-        train_size=0.50,
+        train_size=0.90,
         force_reload=model_config.force_reload_dataset,
         include_tweet=True,
     )
