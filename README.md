@@ -47,5 +47,9 @@ It will also generate a submission.csv file in the format required by Kaggle.
 python main.py
 ```
 
+### Ensemble Mehthod
+We place all the prediction CSV files generated from different models into a folder named 'val_results/'. It will perform ensemble prediction and generate an ensemble_predictions.csv on the validation dataset.
 
-
+```
+python ensemble_prediction.py
+```
