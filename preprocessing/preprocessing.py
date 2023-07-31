@@ -1,3 +1,38 @@
+"""
+This file contains the preprocessing steps for the tweets.
+Run this file to generate the preprocessed files.
+
+It will create the following files:
+
+- no preprocessing just removing tabs
+train_neg_full_notabs.csv
+train_pos_full_notabs.csv
+
+- removing emojis
+train_neg_full_without_emoji.csv
+train_pos_full_without_emoji.csv
+
+- removing stopwords
+train_neg_full_no_stopwords.csv
+train_pos_full_no_stopwords.csv
+
+- removing punctuation
+train_neg_full_no_punctuation.csv
+train_pos_full_no_punctuation.csv
+
+- split hashtags
+train_neg_full_split_hashtags.csv
+train_pos_full_split_hashtags.csv
+
+- spellcheck
+train_neg_full_spellcheck.csv
+train_pos_full_spellcheck.csv
+
+- combined preprocessing with spellcheck, split hashtags and replacing emojis
+train_neg_full_combined.csv
+train_pos_full_combined.csv
+"""
+
 from tqdm import tqdm
 import pandas as pd
 import re
@@ -203,7 +238,6 @@ def spellcheck_test_tweets(lines):
         tokens = line.rstrip().split(" ")
         modified_lines.append(f'{index}\t{" ".join((spell(t) for t in tokens))}\n')
 
-    print("done")
     return modified_lines
 
 
@@ -214,6 +248,8 @@ def spellcheck_train_tweets(lines):
     for line in tqdm(lines, miniters=200):
         tokens = line.rstrip().split(" ")
         modified_lines.append(" ".join((spell(t) for t in tokens)) + "\n")
+
+    return modified_lines
 
 
 def spellcheck(filename):
@@ -398,44 +434,44 @@ def replace_user_and_url(filename):
 
 def main():
     ### remove tabs ###
-    remove_tabs_dataset("../twitter-datasets/train_neg.txt")
-    remove_tabs_dataset("../twitter-datasets/train_pos.txt")
+    remove_tabs_dataset("../twitter-datasets/train_neg_full.txt")
+    remove_tabs_dataset("../twitter-datasets/train_pos_full.txt")
     remove_tabs_dataset("../twitter-datasets/test_data.txt")
 
     ### replace emojis ###
-    replace_emojis("../twitter-datasets/train_neg_notabs.csv")
-    replace_emojis("../twitter-datasets/train_pos_notabs.csv")
+    replace_emojis("../twitter-datasets/train_neg_full_notabs.csv")
+    replace_emojis("../twitter-datasets/train_pos_full_notabs.csv")
     replace_emojis("../twitter-datasets/test_data_notabs.csv")
 
     ### remove stopwords ###
-    remove_stop_words("../twitter-datasets/train_neg_notabs.csv")
-    remove_stop_words("../twitter-datasets/train_pos_notabs.csv")
+    remove_stop_words("../twitter-datasets/train_neg_full_notabs.csv")
+    remove_stop_words("../twitter-datasets/train_pos_full_notabs.csv")
     remove_stop_words("../twitter-datasets/test_data_notabs.csv")
 
     ### remove punctuation ###
-    remove_punctuation("../twitter-datasets/train_neg_notabs.csv")
-    remove_punctuation("../twitter-datasets/train_pos_notabs.csv")
+    remove_punctuation("../twitter-datasets/train_neg_full_notabs.csv")
+    remove_punctuation("../twitter-datasets/train_pos_full_notabs.csv")
     remove_punctuation("../twitter-datasets/test_data_notabs.csv")
 
     ### split hashtags ###
-    split_hashtags("../twitter-datasets/train_neg_notabs.csv")
-    split_hashtags("../twitter-datasets/train_pos_notabs.csv")
+    split_hashtags("../twitter-datasets/train_neg_full_notabs.csv")
+    split_hashtags("../twitter-datasets/train_pos_full_notabs.csv")
     split_hashtags("../twitter-datasets/test_data_notabs.csv")
 
     ### spellcheck ###
-    spellcheck("../twitter-datasets/train_neg_notabs.csv")
-    spellcheck("../twitter-datasets/train_pos_notabs.csv")
+    spellcheck("../twitter-datasets/train_neg_full_notabs.csv")
+    spellcheck("../twitter-datasets/train_pos_full_notabs.csv")
     spellcheck("../twitter-datasets/test_data_notabs.csv")
 
     ### combined preprocessing ###
     # WARNING: this takes a long time to run
-    gen_combined_preprocessed_file("../twitter-datasets/train_neg_notabs.csv")
-    gen_combined_preprocessed_file("../twitter-datasets/train_pos_notabs.csv")
+    gen_combined_preprocessed_file("../twitter-datasets/train_neg_full_notabs.csv")
+    gen_combined_preprocessed_file("../twitter-datasets/train_pos_full_notabs.csv")
     gen_combined_preprocessed_file("../twitter-datasets/test_data_notabs.csv")
 
     ### replace user and url ###
-    replace_user_and_url("../twitter-datasets/train_neg_combined.csv")
-    replace_user_and_url("../twitter-datasets/train_pos_combined.csv")
+    replace_user_and_url("../twitter-datasets/train_neg_full_combined.csv")
+    replace_user_and_url("../twitter-datasets/train_pos_full_combined.csv")
     replace_user_and_url("../twitter-datasets/test_data_combined.csv")
 
 
