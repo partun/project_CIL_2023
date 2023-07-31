@@ -1,3 +1,9 @@
+"""
+This script is used to evaluate the different preprocessing steps on the BERT mini model.
+
+Make sure you run the preprocessing.py script before running this script.
+"""
+
 from main import (
     ModelConfig,
     BERTClass,
@@ -84,20 +90,20 @@ configs = [
         force_reload_dataset=False,
         weight_store_template=None,
     ),
-    # ModelConfig(
-    #     tokenizer_model="distilbert-base-uncased",
-    #     max_length=45,
-    #     nn_model="prajjwal1/bert-mini",
-    #     device="cuda" if cuda.is_available() else "cpu",
-    #     train_batch_size=16,
-    #     valid_batch_size=16,
-    #     epochs=3,
-    #     start_epoch=0,
-    #     learning_rate=1e-05,
-    #     dataset_type="spellcheck",
-    #     force_reload_dataset=False,
-    #     weight_store_template=None,
-    # ),
+    ModelConfig(
+        tokenizer_model="distilbert-base-uncased",
+        max_length=45,
+        nn_model="prajjwal1/bert-mini",
+        device="cuda" if cuda.is_available() else "cpu",
+        train_batch_size=16,
+        valid_batch_size=16,
+        epochs=3,
+        start_epoch=0,
+        learning_rate=1e-05,
+        dataset_type="spellcheck",
+        force_reload_dataset=False,
+        weight_store_template=None,
+    ),
     ModelConfig(
         tokenizer_model="distilbert-base-uncased",
         max_length=45,
