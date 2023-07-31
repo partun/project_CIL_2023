@@ -27,3 +27,4 @@ bert/*_results.csv
 bert/incorrect.csv
 bert/correct.csv
 *.pdf
+!report.pdf
