@@ -47,6 +47,20 @@ It will also generate a submission.csv file in the format required by Kaggle.
 python main.py
 ```
 
+Navigate to the bert directory and run the tweet_embeddings.py file with chosen arguments and evaluate 4 different methods of using hidden layers to generate tweet embeddings on either XLNet or RoBERTa model.
+```
+python tweet_embeddings.py model_type combine_type
+```
+#### model_type
+##### xlnet: run on xlnet model
+##### roberta: run no roberta model
+
+#### combine type
+##### l1: only use the last hidden layer to generate tweet embeddings
+##### wl4: weighted average the last 4 hidden layers to generae tweet embeddings
+##### l4cnn: use last 4 hidden layers with cnn to generate tweet embeddings
+##### l8cnn: use both the last 4 and intermediate 4 hidden layers with cnn to generate tweet embeddings
+
 ### Ensemble Mehthod
 We place all the prediction CSV files generated from different models into a folder named 'val_results/'. It will perform ensemble prediction and generate an ensemble_predictions.csv on the validation dataset.
 
